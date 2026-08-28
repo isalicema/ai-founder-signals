@@ -20,32 +20,38 @@ export const SEED_SOURCES: NewSource[] = [
     name: '晚点 LatePost', url: 'https://www.latepost.com/',
     country: 'CN', language: 'zh', ingestMethod: 'html', fetchMode: 'full', purity: 0.5,
     // ✅ 实测：列表页 /news/dj_detail?id=NNNN 在原始 HTML 里；详情页 481 段约 4.7 万字可直取
+    // ⏳ 等 HtmlAdapter（M4 只交付了 rss/podcast/youtube，html 尚无实现）
   },
   {
     name: 'Founder Park（智源社区镜像）', url: 'https://hub.baai.ac.cn/users/74219',
     country: 'CN', language: 'zh', ingestMethod: 'html', fetchMode: 'discover_only', purity: 0.8,
-    // ⚠️ 实测：列表 JS 渲染，curl 拿不到文章链接
+    enabled: false,
+    // ⚠️ 实测：列表 JS 渲染，curl 连文章链接都拿不到 —— discover 本身无从谈起，
+    //    不是「抓不到正文」而是「发现不了新内容」。先停用，等浏览器抓取（Phase 2）
+    //    或走 M8 的手动投喂链接。开着只会让 consecutive_failures 一直涨。
   },
   {
     name: '硅星人 Pro（36氪镜像）', url: 'https://36kr.com/user/17325558',
     country: 'CN', language: 'zh', ingestMethod: 'html', fetchMode: 'discover_only', purity: 0.3,
-    // ⚠️ 实测：JS 渲染，HTML 里无内链
+    enabled: false,   // ⚠️ 实测 JS 渲染，HTML 里无内链，discover 不可行
   },
   {
     name: '暗涌 Waveline（腾讯新闻镜像）',
     url: 'https://news.qq.com/omn/author/8QIf3n9a7oYauzjc5QE%3D',
     country: 'CN', language: 'zh', ingestMethod: 'html', fetchMode: 'discover_only', purity: 0.6,
-    // ⚠️ 实测：JS 渲染
+    enabled: false,   // ⚠️ 实测 JS 渲染，discover 不可行
   },
   {
     name: 'Z Potentials（腾讯新闻镜像）',
     url: 'https://news.qq.com/omn/author/8QIf3nxd5YwYvz%2Fc5wM%3D',
     country: 'CN', language: 'zh', ingestMethod: 'html', fetchMode: 'discover_only', purity: 0.5,
+    enabled: false,   // ⚠️ 同上，腾讯新闻作者页 JS 渲染
   },
   {
     name: 'AI 闹', url: 'https://elsewhere.news/zh/ainow',
     country: 'CN', language: 'zh', ingestMethod: 'html', fetchMode: 'full', purity: 0.6,
     // ✅ 实测：列表 /zh/ainow/NNN 在原始 HTML 里，14 条
+    // ⏳ 等 HtmlAdapter
   },
   {
     name: '十字路口 Crossing',
