@@ -11,14 +11,15 @@ AI 创始人一手访谈探测器 —— `collection-manager` 的前置漏斗。
 
 | 部分 | 负责人 | 状态 |
 |---|---|---|
-| 准入判定规则 + 分档 + entity 归一化 | 妙蛙种子 | ✅ 已完成，27 测试全绿 |
+| 准入判定规则 + 分档 + entity 归一化 | 妙蛙种子 | ✅ 已完成，评测集已固化 |
 | 判定 / 摘要 prompt | 妙蛙种子 | ✅ 初版完成 |
 | M1（Next.js / TS / CI） | 星子 | ✅ 已完成 |
 | M2（Drizzle schema / Supabase migration / RLS） | 星子 | ✅ 代码完成；待有容器或远程项目时重放迁移 |
-| M3（Job 队列 / worker 骨架 / 临时区） | 星子 | ✅ 已完成，36 测试全绿 |
-| M4-M5（适配器 / Feed 页） | 星子 | ⏳ 待信源清单后继续 |
-| 15 个信源清单 | Alice | 🟡 整理中 |
-| 15 个一级主题 + 5 正例 5 反例 | RabbitT | ⏳ |
+| M3（Job 队列 / worker 骨架 / 临时区） | 星子 | ✅ 已完成 |
+| M4（RSS / 播客 / YouTube 适配器） | 星子 | ✅ 已完成；11 个真实 seed 源 discover 全通过 |
+| M5（Feed 页） | 星子 | ⏳ 下一步 |
+| 信源 seed | Alice / 妙蛙种子 | ✅ 17 个实测源已入库 |
+| 15 个一级主题 + 评测集 | RabbitT / 妙蛙种子 | ✅ 已固化 |
 
 ## 已实现
 
@@ -34,6 +35,7 @@ src/pipeline/
 prompts/                L2 判定 + 摘要 prompt
 src/db/                 Drizzle 五表 schema + 服务端连接
 src/worker/             SKIP LOCKED 队列 + worker 红线编排 + 临时区生命周期
+src/adapters/           RSS/Atom、服务端播客页、YouTube Atom + yt-dlp 字幕
 supabase/               可重放 migration + 默认封闭的 RLS 测试
 ```
 
@@ -43,7 +45,7 @@ supabase/               可重放 migration + 默认封闭的 RLS 测试
 npm install
 npm run lint      # ESLint
 npm run typecheck # tsc --noEmit
-npm test          # Vitest，当前 36 项
+npm test          # Vitest，当前 74 项
 npm run build     # Next.js production build
 ```
 

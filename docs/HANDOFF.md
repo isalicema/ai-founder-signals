@@ -9,6 +9,8 @@
 - ✅ M2：五表 Drizzle schema、Supabase migration、RLS 默认封闭
 - ✅ M3：`claimJob/completeJob/failJob`、`SKIP LOCKED`、指数退避、`withTempWorkspace(fn)`
 - ✅ worker 红线测试：folded 入库但不抓正文/不跑摘要；临时区成功和异常路径均清理
+- ✅ M4：`SourceAdapter` 注册表、RSS/Atom、服务端播客页回退、YouTube Atom + yt-dlp 字幕
+- ✅ M4 真源冒烟：8 个 YouTube + 3 个播客 seed 均发现 15 条；字幕只在 M3 临时区出现并已验证清理
 - ⏳ migration 实库重放：当前机器没有 Docker/Podman/本地 Postgres，待有本地容器或远程 Supabase 项目时执行
 
 ## 你的模块（按顺序）
