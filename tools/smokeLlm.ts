@@ -17,6 +17,9 @@ const CASES = [
   { title: '对话与爱为舞张怀亭：大哥创业不走弯路', snippet: '张怀亭复盘了与爱为舞的产品取舍与团队搭建。', expect: true },
   { title: 'Sam Altman 最新访谈的十个关键要点：AGI、算力与下一代模型', snippet: '本文整理了访谈中的十个要点。', expect: false },
   { title: '对话 Gartner 分析师：企业 Agent 将如何重构 SaaS 市场', snippet: '分析师谈企业 Agent 的采纳节奏。', expect: false },
+  // ⭐ 回归用例：2026-08-29 首次冒烟时这条被判 false，理由「Supabase 是数据库
+  //    公司，不属于 AI 公司」。模型没判错，是准入标准的边界没定。Alice 定为放宽——
+  //    开发者工具/基础设施这一层现在都在 AI 里，不该让模型去裁定公司身份。
   { title: 'Supabase: Cash Does Not Equal Success', snippet: 'The founders discuss what they learned about burn and focus.', expect: true },
 ];
 
