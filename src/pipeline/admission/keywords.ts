@@ -66,7 +66,9 @@ const ZH_SOFT_NEG: Rule[] = [
 
 /** 英文强正向 */
 const EN_STRONG: Rule[] = [
-  { id: 'en.interview', kind: 'strong_positive', pattern: /\binterviews?\b/i },
+  // ⚠️ 不能用裸 /interviews?/ ——「How Outset Turned AI Interviews Into a Category」
+  // 讲的是产品做访谈，不是这条内容本身是访谈。实测误报，必须带介词/冒号限定。
+  { id: 'en.interview', kind: 'strong_positive', pattern: /\binterview(ed)?\s+(with|by)\b|\ban interview\b|\binterview:/i },
   { id: 'en.in_conversation', kind: 'strong_positive', pattern: /\bin conversation with\b/i },
   { id: 'en.sits_down', kind: 'strong_positive', pattern: /\bsits down with\b/i },
   { id: 'en.talks_with', kind: 'strong_positive', pattern: /\btalks? with\b/i },
@@ -77,7 +79,10 @@ const EN_STRONG: Rule[] = [
 
 const EN_WEAK: Rule[] = [
   { id: 'en.podcast_ep', kind: 'weak_positive', pattern: /\b(ep\.?|episode)\s*#?\d+/i },
-  { id: 'en.founder_of', kind: 'weak_positive', pattern: /\b(co-)?founder (of|&|and)\b/i },
+  { id: 'en.founder_of', kind: 'weak_positive', pattern: /\b(co-)?founders? (of|&|and)\b/i },
+  // 实测补充：英文 YouTube 访谈标题几乎不写体裁词，靠这两个形态兜一点
+  { id: 'en.how_x_built', kind: 'weak_positive', pattern: /\b[Hh]ow ([A-Z][\w.'-]+\s+){1,3}([Bb]uilt|[Ff]ounded|[Ss]tarted|[Gg]rew|[Ss]caled)\b/ },
+  { id: 'en.with_guest', kind: 'weak_positive', pattern: /[—–-]\s*(with|w\/)\s+[A-Z][\w.'-]+/i },
 ];
 
 const EN_HARD_NEG: Rule[] = [
