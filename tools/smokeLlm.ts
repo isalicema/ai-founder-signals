@@ -6,6 +6,9 @@
  *
  * 预计花费：DeepSeek 约 $0.002。
  */
+// 自动加载 .env.local（Node 20.6+ 内置，不需要 dotenv）
+try { process.loadEnvFile(new URL('../.env.local', import.meta.url).pathname); } catch { /* 没有就算了 */ }
+
 import { createLlmJudge } from '../src/llm/judge.js';
 import { summarizeItem } from '../src/llm/summarize.js';
 import { UsageLedger, llmProvider, isPeakWindow } from '../src/llm/provider.js';
@@ -16,6 +19,13 @@ const CASES = [
   { title: '对话 Gartner 分析师：企业 Agent 将如何重构 SaaS 市场', snippet: '分析师谈企业 Agent 的采纳节奏。', expect: false },
   { title: 'Supabase: Cash Does Not Equal Success', snippet: 'The founders discuss what they learned about burn and focus.', expect: true },
 ];
+
+if (!process.env.DEEPSEEK_API_KEY?.trim() && (process.env.AFS_LLM_PROVIDER ?? 'deepseek') === 'deepseek') {
+  console.error('\n❌ 没找到 DEEPSEEK_API_KEY。\n');
+  console.error('   请编辑 .env.local，在 DEEPSEEK_API_KEY= 后面贴上 key，然后重跑：');
+  console.error('   npx tsx tools/smokeLlm.ts\n');
+  process.exit(1);
+}
 
 const ledger = new UsageLedger();
 const p = llmProvider();
