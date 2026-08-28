@@ -32,11 +32,17 @@ export const SEED_SOURCES: NewSource[] = [
     //    届时改为 ingestMethod:'json_api' + config。见 docs/SPEC-JsonApiAdapter.md
   },
   {
-    name: '硅星人 Pro（36氪镜像）', url: 'https://36kr.com/user/17325558',
-    country: 'CN', language: 'zh', ingestMethod: 'html', fetchMode: 'discover_only', purity: 0.3,
-    enabled: false,
-    // ⚠️ JS 渲染；接口 gateway.36kr.com 需要 sign 请求签名 → 逆向签名属反爬对抗，不做
-    //    （v2.1 §10.1）。保持停用，需要时走 M8 手动投喂。purity 本来也只有 0.3。
+    name: '品玩 PingWest（硅星人）', url: 'https://www.pingwest.com/',
+    country: 'CN', language: 'zh', ingestMethod: 'html', fetchMode: 'full', purity: 0.3,
+    // ✅ 走原始发布方而不是镜像。实测首页服务端渲染，47 条 /a/{id} 在原始 HTML 里，
+    //    详情页 17,822 字可直取。三个 html 信源里判据区分度最好（titleish 38 : 5）。
+    // ⏳ 等 HtmlAdapter，见 docs/SPEC-HtmlAdapter.md
+    //
+    // 放弃过的两条路（都是签名式反爬，按 v2.1 §10.1 不做）：
+    //   · 36氪镜像 gateway.36kr.com  → 需要 sign 请求签名
+    //   · 知乎 @硅星人             → 需要 x-zse-96 签名头（code 10003）
+    // ⚠️ purity 0.3：品玩全站发布面比「硅星人 Pro」宽，会混进不少非 AI 创始人内容，
+    //    交给 L1 负向词 + L2 过滤。
   },
   {
     name: '暗涌 Waveline（腾讯新闻镜像）',

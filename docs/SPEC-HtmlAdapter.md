@@ -1,8 +1,8 @@
 # HtmlAdapter 施工说明（M4.5）
 
 > 承接人：星子｜排在 M5 之后
-> 目标：让 `ingestMethod: 'html'` 的信源可用。当前只解锁**晚点 LatePost** 和 **AI 闹**两个——
-> 它们的列表在原始 HTML 里，实测可抓。
+> 目标：让 `ingestMethod: 'html'` 的信源可用。解锁三个——**晚点 LatePost**、**AI 闹**、
+> **品玩 PingWest（硅星人）**。三个的列表都在原始 HTML 里，实测可抓。
 
 ## 0. 为什么只有两个
 
@@ -81,9 +81,13 @@ export class HtmlAdapter implements SourceAdapter {
 按 §2.2 算法实测结果（区分度很干净）：
 
 ```
-latepost-list   /news/dj_detail?id   titleish=11   次优组 titleish=2
-ainow-list      /zh/ainow/{id}       titleish=4    次优组 titleish=1
+latepost-list   /news/dj_detail?id      titleish=11   次优组 titleish=2
+ainow-list      /zh/ainow/{id}          titleish=4    次优组 titleish=1
+pingwest-list   //www.pingwest.com/a/{id}  titleish=38   次优组 titleish=5
 ```
+
+⚠️ **品玩的 href 是协议相对的**（`//www.pingwest.com/a/316857`）。
+归一化前必须先用 `new URL(href, pageUrl)` 绝对化，否则同源判断和形态归一都会出错。
 
 ### 2.4 DiscoveredItem 字段怎么填
 
@@ -110,6 +114,7 @@ fixture 已备好（真实页面，剥掉 script/style/svg/注释）：
 ```
 tests/fixtures/html/latepost-list.html   17KB
 tests/fixtures/html/ainow-list.html      25KB
+tests/fixtures/html/pingwest-list.html   ~30KB
 ```
 
 必须通过：
@@ -117,6 +122,8 @@ tests/fixtures/html/ainow-list.html      25KB
 ```
 1. latepost-list.html → 发现 ≥10 条，全部形如 /news/dj_detail?id=<数字>
 2. ainow-list.html    → 发现 ≥4 条，全部在 /zh/ainow/ 下
+2b. pingwest-list.html → 发现 ≥30 条，全部形如 /a/<数字>；不含 /w/ /tag/ /user/
+2c. pingwest 的协议相对 href 被正确绝对化为 https://
 3. 两个 fixture 的结果里，title 全部非空且长度 ≥ 8
 4. 结果里不含分页链接（?ap=）、不含网站目录（/websites/）、不含 /zh/about /zh/legal
 5. ⭐ 同一份 fixture 跑两次，externalId 集合完全一致    → 幂等
@@ -140,4 +147,4 @@ tests/fixtures/html/ainow-list.html      25KB
 ## 5. 完成后
 
 告诉我，我把 seed 里晚点和 AI 闹的 `⏳ 等 HtmlAdapter` 注释去掉。
-届时可用信源从 11 个变成 13 个。
+届时可用信源从 11 个变成 14 个（晚点 / AI 闹 / 品玩）。
