@@ -137,3 +137,21 @@ DEEPSEEK_API_KEY=sk-... npx tsx tools/smokeLlm.ts
 ```
 跑 4 条准入用例（含 2 条 RabbitT 的难反例）+ 1 次摘要，打印用量。约 $0.002。
 **这是唯一能验证 LLM 层真的通的方式，单测全是桩。**
+
+---
+
+## M6 收藏队列接缝已就位（妙蛙种子）
+
+`tools/archiveQueue.ts` —— feed 与 collection-manager 的接缝。
+
+```bash
+npx tsx tools/archiveQueue.ts list        # 列出待处理
+npx tsx tools/archiveQueue.ts done <id>   # 回写 archived_at
+```
+
+星子这边只需要保证 M5 的「🔖 深看」按钮写 `item.archive_requested_at`
+（已完成，见 `src/app/actions.ts`）。**不要在网页里调 collection-manager**
+——那需要本地常驻服务，而 worker 设计成跑在 Actions 上。
+
+工作流：Alice 点「深看」（零成本意向标记，不阻塞）→ 稍后在 Claude Code 说
+「处理收藏队列」→ 妙蛙种子读队列逐条跑 collection-manager → 回写。
