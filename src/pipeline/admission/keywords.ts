@@ -8,7 +8,14 @@
  * ⚠️ 词表是起点不是终点。每条负向命中都会留 reason，跑两周后拿误判样本回来迭代。
  */
 
-export type RuleKind = 'strong_positive' | 'weak_positive' | 'hard_negative' | 'soft_negative';
+export type RuleKind =
+  | 'strong_positive' | 'weak_positive' | 'hard_negative' | 'soft_negative'
+  /**
+   * 「受访者身份存疑」——与体裁判定正交的一维。
+   * 标题能证明「这是一场访谈」，但证明不了「受访者是 AI 创始人」。
+   * 命中这类规则时，无论体裁信号多强，都必须交 L2 判断，不允许 L1 独自放行。
+   */
+  | 'needs_llm';
 
 export interface Rule {
   id: string;
@@ -50,6 +57,18 @@ const ZH_WEAK: Rule[] = [
  */
 const ZH_HARD_NEG: Rule[] = [
   { id: 'zh.bangdan', kind: 'hard_negative', pattern: /榜单|排行榜|排行|盘点|年度评选/ },
+  {
+    id: 'zh.digest',
+    kind: 'hard_negative',
+    // 二手解读：「XX 访谈的十个要点」——是对访谈的摘要，不是访谈本身。
+    //
+    // ⚠️ 不能用「同时出现访谈词和要点词」的合取——实测会误伤
+    //    「对话某某某：AI 创业的三个要点」这种真访谈。
+    //    真正的区分是**所属结构**：「访谈__的__…要点」里的要点属于那场访谈，
+    //    说明这条内容是对它的转述；而真访谈标题里的「要点」属于话题本身。
+    //    所以必须锚定紧跟在体裁词后面的「的」。
+    pattern: /(访谈|对话|专访|对谈|演讲|直播|分享)的[^，。：、]{0,8}(要点|看点|划重点|金句|精华|总结|整理)/,
+  },
   { id: 'zh.zhaopin', kind: 'hard_negative', pattern: /招聘|报名|课程|直播预告|活动预告/ },
   { id: 'zh.caibao', kind: 'hard_negative', pattern: /财报|营收报告|季度业绩/ },
 ];
@@ -97,9 +116,28 @@ const EN_SOFT_NEG: Rule[] = [
   { id: 'en.corp', kind: 'soft_negative', pattern: /\b(layoffs|acquires|acquisition)\b/i },
 ];
 
+/**
+ * 受访者身份存疑：标题里出现的是「分析师/教授/投资人」这类非创始人角色。
+ * 不直接判负——创始人也可能同时是投资人，误杀代价高于误收（§0.4）。
+ * 只是强制交给 L2 判断，剥夺 L1 的独自放行权。
+ */
+const GUEST_ROLE_AMBIGUOUS: Rule[] = [
+  {
+    id: 'zh.non_founder_role',
+    kind: 'needs_llm',
+    pattern: /(?=.*(访谈|对话|专访|对谈))(?=.*(分析师|研究员|教授|学者|经济学家|投资人|合伙人|记者|主编|律师))/,
+  },
+  {
+    id: 'en.non_founder_role',
+    kind: 'needs_llm',
+    pattern: /\b(analyst|professor|researcher|economist|journalist|reporter|partner at)\b/i,
+  },
+];
+
 export const RULES: Rule[] = [
   ...ZH_STRONG, ...ZH_WEAK, ...ZH_HARD_NEG, ...ZH_SOFT_NEG,
   ...EN_STRONG, ...EN_WEAK, ...EN_HARD_NEG, ...EN_SOFT_NEG,
+  ...GUEST_ROLE_AMBIGUOUS,
 ];
 
 /** YouTube / 播客标题里用分隔符挂嘉宾名的形态，算弱正向 */

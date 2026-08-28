@@ -5,12 +5,17 @@ const src = (purity: number) => ({ purity, name: 'test' });
 const article = { mediaType: 'article' as const, contentChars: 12000 };
 
 describe('§4.0 三层准入漏斗', () => {
-  it('强正向不调用 LLM', async () => {
-    const judge = vi.fn<LlmJudge>();
+  // ⚠️ 2026-08-29 架构修正：强正向不再跳过 L2。
+  //    标题体裁词只能证明「这是访谈」，证明不了「受访者是创始人」。
+  //    省钱的地方在负向判定（那才是大头），不在放行侧。
+  it('强正向仍然要交 L2 判断受访者身份', async () => {
+    const judge = vi.fn<LlmJudge>(async () => ({ is_founder_interview: true, confidence: 0.9 }));
     const r = await admit({ title: '对谈某某某：Agent 的交付难题', ...article, source: src(0.5) }, judge);
     expect(r.accepted).toBe(true);
-    expect(r.llmUsed).toBe(false);
-    expect(judge).not.toHaveBeenCalled();
+    expect(judge).toHaveBeenCalled();
+    // 体裁判定本身仍是强正向，只是不再独自决定放行
+    expect(r.titleSignal.verdict).toBe('strong_positive');
+    expect(r.titleSignalScore).toBe(1.0);
   });
 
   it('负向不调用 LLM、也不抓正文', async () => {
@@ -46,7 +51,8 @@ describe('§4.0 三层准入漏斗', () => {
       undefined,
     );
     expect(r.accepted).toBe(true);
-    expect(r.admissionConfidence).toBe(1.0);
+    // 无判官时保守放行（0.5），而不是 L1 自信直判——召回优先（§0.4）
+    expect(r.admissionConfidence).toBe(0.5);
   });
 
   it('没有 LLM 判官时保守放行 —— 召回优先于精确（§0.4）', async () => {

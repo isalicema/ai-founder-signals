@@ -59,13 +59,22 @@ export async function admit(input: AdmissionInput, llmJudge?: LlmJudge): Promise
     };
   }
 
-  // L1 强正向：直接通过，不调 LLM
-  if (titleSignal.verdict === 'strong_positive') {
-    return { ...base, accepted: true, admissionConfidence: 1.0, llmUsed: false, shouldFetchBody: true };
-  }
+  // ⚠️ 架构修正（2026-08-29，由 RabbitT 评测样本暴露）：
+  //
+  //   旧设计：L1 强正向 → 直接通过，不调 L2。
+  //   为什么错：标题里的体裁词只能证明「这是一场访谈」，证明不了
+  //             「受访者是 AI 创始人」——而后者是准入标准的另一半。
+  //   反例：「对话 Gartner 分析师：企业 Agent 将如何重构 SaaS 市场」
+  //         体裁强命中，但受访者是分析师不是创始人。L1 无法分辨。
+  //
+  //   新设计：体裁判定和身份判定分开。
+  //     · 体裁靠规则（便宜、可解释）→ 喂给 tier_score
+  //     · 身份靠 L2 或信源先验     → 决定放不放行
+  //   成本影响可忽略：被判负的大头仍然不调 L2，那才是省钱的地方。
 
-  // L0 信源先验：高纯度信源无需 L2
-  if (input.source.purity >= HIGH_PURITY_THRESHOLD) {
+  // L0 信源先验：高纯度信源本身保证了受访对象，可跳过 L2
+  // （身份存疑标记会剥夺这条快速通道）
+  if (input.source.purity >= HIGH_PURITY_THRESHOLD && !titleSignal.requiresLlm) {
     return {
       ...base, accepted: true,
       admissionConfidence: +input.source.purity.toFixed(4),
@@ -73,9 +82,17 @@ export async function admit(input: AdmissionInput, llmJudge?: LlmJudge): Promise
     };
   }
 
-  // L2 LLM 兜底
+  // L2：由 LLM 判断受访者身份
   if (!llmJudge) {
-    // 没有判官时保守放行——召回优先于精确（§0.4）
+    // 没有判官时保守放行——召回优先于精确（§0.4）。
+    // ⚠️ 但身份存疑的不在此列：宁可让它进 folded，也不要把分析师访谈
+    //    当创始人访谈推到 feed 顶部。
+    if (titleSignal.requiresLlm) {
+      return {
+        ...base, accepted: false, admissionConfidence: 0, llmUsed: false,
+        rejectReason: 'guest_role_ambiguous_no_judge', shouldFetchBody: false,
+      };
+    }
     return { ...base, accepted: true, admissionConfidence: 0.5, llmUsed: false, shouldFetchBody: true };
   }
   const verdict = await llmJudge({ title: input.title, snippet: (input.snippet ?? '').slice(0, 500) });
