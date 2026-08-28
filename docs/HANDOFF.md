@@ -77,3 +77,54 @@ const t = scoreTier({
 ## 提交约定
 
 **不要自己 push。** 本地 commit，需要上 GitHub 时告诉我，由我统一把关后提交。
+
+---
+
+## LLM 层已就位（妙蛙种子，2026-08-29）
+
+```
+src/llm/
+├── provider.ts    模型解析（env 可覆盖）+ 用量台账 + 成本计价
+├── judge.ts       L2 准入判定 → 直接传给 admit() 的第二个参数
+├── summarize.ts   摘要 + 标签 + 人物公司（含引文校验与重试）
+└── guards.ts      引文守卫（prompt 是请求，代码才是保证）
+src/worker/analyze.ts   adapter.fetch → 摘要 的接缝
+```
+
+### 接进 worker 的方式
+
+```ts
+import { createLlmJudge, UsageLedger } from '../llm';
+import { analyzeInWorkspace } from './analyze';
+
+const ledger = new UsageLedger();
+
+await processItem(admissionInput, {
+  llmJudge: createLlmJudge(ledger),                    // ← L2
+  insertFolded: async (folded, admission) => { /* 写库，不抓正文 */ },
+  fetchAndAnalyze: (workspace, admission) =>
+    analyzeInWorkspace(adapter, item, source.name, workspace, ledger),
+  insertAccepted: async (analysis, admission) => { /* 写库 */ },
+});
+
+// 一轮跑完打印一行，用于成本对账
+process.stdout.write(ledger.summary() + '\n');
+```
+
+⚠️ **`analyzeInWorkspace` 是 raw 唯一的合法停留处。** 它返回 `PersistableAnalysis`，
+类型里没有 `rawText`——raw 在编译期就流不进持久化代码。必须包在 `withTempWorkspace` 里调。
+
+### 三条不要碰的
+
+1. **不要在 llm/ 里加 console 打印。** `tests/llmRedline.test.ts` 会 grep 源码断言。
+   要观测就往 `UsageLedger` 里加字段，那里只有 token 数和 sha256 指纹。
+2. **不要绕过 `sanitizeTags`。** LLM 返回集合外的 tag 必须丢弃并留痕。
+3. **不要把 `checkSummary` 降级成警告。** 系统不存原文，编造的引文事后无法核验。
+
+### 冒烟测试（我这边没有凭据，跑不了）
+
+```bash
+ANTHROPIC_API_KEY=sk-... npx tsx tools/smokeLlm.ts
+```
+跑 4 条准入用例（含 2 条 RabbitT 的难反例）+ 1 次摘要，打印用量。约 $0.01。
+**这是唯一能验证 LLM 层真的通的方式，单测全是桩。**
