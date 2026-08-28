@@ -150,7 +150,7 @@ export function createDemoFeed(now = new Date()): FeedPayload {
       id: 'demo-funding-folded',
       title: '某 AI 应用公司宣布完成新一轮融资，估值升至 20 亿美元',
       url: 'https://example.com/demo/funding',
-      sourceName: '硅星人 Pro（36氪镜像）',
+      sourceName: '品玩 PingWest（硅星人）',
       country: 'CN',
       region: '国内',
       mediaType: 'article',
