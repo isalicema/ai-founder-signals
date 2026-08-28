@@ -26,26 +26,32 @@ export const SEED_SOURCES: NewSource[] = [
     name: 'Founder Park（智源社区镜像）', url: 'https://hub.baai.ac.cn/users/74219',
     country: 'CN', language: 'zh', ingestMethod: 'html', fetchMode: 'discover_only', purity: 0.8,
     enabled: false,
-    // ⚠️ 实测：列表 JS 渲染，curl 连文章链接都拿不到 —— discover 本身无从谈起，
-    //    不是「抓不到正文」而是「发现不了新内容」。先停用，等浏览器抓取（Phase 2）
-    //    或走 M8 的手动投喂链接。开着只会让 consecutive_failures 一直涨。
+    // ⚠️ 页面 JS 渲染，curl 拿不到文章链接。
+    // ✅ 但已找到无认证的 JSON 接口（POST hub-api.baai.ac.cn/api/v1/stories/user），
+    //    实测 6 条含标题/摘要/时间/封面。等 JsonApiAdapter 落地即可恢复，
+    //    届时改为 ingestMethod:'json_api' + config。见 docs/SPEC-JsonApiAdapter.md
   },
   {
     name: '硅星人 Pro（36氪镜像）', url: 'https://36kr.com/user/17325558',
     country: 'CN', language: 'zh', ingestMethod: 'html', fetchMode: 'discover_only', purity: 0.3,
-    enabled: false,   // ⚠️ 实测 JS 渲染，HTML 里无内链，discover 不可行
+    enabled: false,
+    // ⚠️ JS 渲染；接口 gateway.36kr.com 需要 sign 请求签名 → 逆向签名属反爬对抗，不做
+    //    （v2.1 §10.1）。保持停用，需要时走 M8 手动投喂。purity 本来也只有 0.3。
   },
   {
     name: '暗涌 Waveline（腾讯新闻镜像）',
     url: 'https://news.qq.com/omn/author/8QIf3n9a7oYauzjc5QE%3D',
     country: 'CN', language: 'zh', ingestMethod: 'html', fetchMode: 'discover_only', purity: 0.6,
-    enabled: false,   // ⚠️ 实测 JS 渲染，discover 不可行
+    enabled: false,
+    // ✅ 已找到无认证接口 GET i.news.qq.com/getSubNewsMixedList，实测 20 条。
+    //    等 JsonApiAdapter 恢复。见 docs/SPEC-JsonApiAdapter.md
   },
   {
     name: 'Z Potentials（腾讯新闻镜像）',
     url: 'https://news.qq.com/omn/author/8QIf3nxd5YwYvz%2Fc5wM%3D',
     country: 'CN', language: 'zh', ingestMethod: 'html', fetchMode: 'discover_only', purity: 0.5,
-    enabled: false,   // ⚠️ 同上，腾讯新闻作者页 JS 渲染
+    enabled: false,
+    // ✅ 同上，同一接口换 guestSuid，实测 20 条。等 JsonApiAdapter 恢复。
   },
   {
     name: 'AI 闹', url: 'https://elsewhere.news/zh/ainow',

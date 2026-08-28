@@ -1,0 +1,54 @@
+'use server';
+
+import { and, eq } from 'drizzle-orm';
+import { revalidatePath } from 'next/cache';
+import { createDatabaseConnection } from '../db/client.js';
+import { entities, feedback, items } from '../db/schema.js';
+import type { FeedActionResult, FeedItemAction } from '../feed/types.js';
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/**
+ * Persistent mutations are deliberately opt-in until M7 adds the whitelist
+ * auth guard. The M5 preview still responds optimistically in the browser.
+ */
+export async function applyFeedAction(action: FeedItemAction): Promise<FeedActionResult> {
+  if (process.env.AFS_FEED_MUTATIONS_ENABLED !== 'true') {
+    return { ok: true, persisted: false };
+  }
+  if (!process.env.SUPABASE_DB_URL) return { ok: false, persisted: false };
+
+  const connection = createDatabaseConnection({ maxConnections: 1 });
+  try {
+    if (action.type === 'toggle_entity_star') {
+      const condition = action.entityId && UUID.test(action.entityId)
+        ? eq(entities.id, action.entityId)
+        : and(eq(entities.kind, action.entityKind), eq(entities.canonicalName, action.entityName));
+      await connection.db.update(entities).set({ starred: action.starred }).where(condition);
+    } else {
+      if (!UUID.test(action.itemId)) return { ok: true, persisted: false };
+      const at = new Date(action.at);
+      await connection.db.transaction(async (transaction) => {
+        if (action.type === 'opened_source') {
+          await transaction.update(items).set({ readAt: at }).where(eq(items.id, action.itemId));
+          await transaction.insert(feedback).values({ itemId: action.itemId, signal: 'opened_source' });
+        } else if (action.type === 'archive_requested') {
+          await transaction.update(items).set({ archiveRequestedAt: at }).where(eq(items.id, action.itemId));
+          await transaction.insert(feedback).values({ itemId: action.itemId, signal: 'archive_requested' });
+        } else if (action.type === 'irrelevant') {
+          await transaction.update(items).set({ tier: 'folded', readAt: at }).where(eq(items.id, action.itemId));
+          await transaction.insert(feedback).values({ itemId: action.itemId, signal: 'irrelevant' });
+        } else if (action.type === 'great') {
+          await transaction.update(items).set({ tier: 'highlight', readAt: at }).where(eq(items.id, action.itemId));
+          await transaction.insert(feedback).values({ itemId: action.itemId, signal: 'great' });
+        }
+      });
+    }
+    revalidatePath('/');
+    return { ok: true, persisted: true };
+  } catch {
+    return { ok: false, persisted: false };
+  } finally {
+    await connection.close();
+  }
+}
