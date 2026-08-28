@@ -1,13 +1,14 @@
 /**
  * 真实 API 冒烟测试。单测全是桩，这个才验证 LLM 层真的能跑通。
  *
- *   ANTHROPIC_API_KEY=sk-... npx tsx tools/smokeLlm.ts
+ *   DEEPSEEK_API_KEY=sk-... npx tsx tools/smokeLlm.ts
+ *   AFS_LLM_PROVIDER=anthropic ANTHROPIC_API_KEY=sk-... npx tsx tools/smokeLlm.ts
  *
- * 预计花费：不到 $0.01。
+ * 预计花费：DeepSeek 约 $0.002。
  */
 import { createLlmJudge } from '../src/llm/judge.js';
 import { summarizeItem } from '../src/llm/summarize.js';
-import { UsageLedger, modelFor } from '../src/llm/provider.js';
+import { UsageLedger, llmProvider, isPeakWindow } from '../src/llm/provider.js';
 
 const CASES = [
   { title: '对话与爱为舞张怀亭：大哥创业不走弯路', snippet: '张怀亭复盘了与爱为舞的产品取舍与团队搭建。', expect: true },
@@ -17,7 +18,9 @@ const CASES = [
 ];
 
 const ledger = new UsageLedger();
-console.log(`模型：admission=${modelFor('admission')}  summary=${modelFor('summary')}\n`);
+const p = llmProvider();
+console.log(`供应商：${p.name}  admission=${p.modelFor('admission')}  summary=${p.modelFor('summary')}`);
+console.log(`计价档：${isPeakWindow() ? '高峰' : '平峰'}\n`);
 
 let pass = 0;
 const judge = createLlmJudge(ledger);

@@ -84,12 +84,21 @@ const t = scoreTier({
 
 ```
 src/llm/
-├── provider.ts    模型解析（env 可覆盖）+ 用量台账 + 成本计价
+├── types.ts       LlmProvider 接口
+├── deepseek.ts    默认供应商（OpenAI 兼容口，deepseek-v4-flash）
+├── anthropic.ts   备选供应商
+├── provider.ts    供应商选择 + 校验重试 + 用量台账 + 分时计价
 ├── judge.ts       L2 准入判定 → 直接传给 admit() 的第二个参数
 ├── summarize.ts   摘要 + 标签 + 人物公司（含引文校验与重试）
 └── guards.ts      引文守卫（prompt 是请求，代码才是保证）
 src/worker/analyze.ts   adapter.fetch → 摘要 的接缝
 ```
+
+⚠️ **DeepSeek 只有 `response_format:{type:'json_object'}`，没有 json_schema。**
+服务端不保证结构，所以校验必须在我们这边做：`completeJsonValidated()` 统一负责
+zod 校验 + 失败重试 + 记账。**不要绕过它直接调 provider.completeJson()**，
+那样会静默退化成「以为有 schema 保证、其实没有」。
+另外官方文档提示「可能偶尔返回空内容」，空返回按失败处理并重试，不当空对象。
 
 ### 接进 worker 的方式
 
@@ -124,7 +133,7 @@ process.stdout.write(ledger.summary() + '\n');
 ### 冒烟测试（我这边没有凭据，跑不了）
 
 ```bash
-ANTHROPIC_API_KEY=sk-... npx tsx tools/smokeLlm.ts
+DEEPSEEK_API_KEY=sk-... npx tsx tools/smokeLlm.ts
 ```
-跑 4 条准入用例（含 2 条 RabbitT 的难反例）+ 1 次摘要，打印用量。约 $0.01。
+跑 4 条准入用例（含 2 条 RabbitT 的难反例）+ 1 次摘要，打印用量。约 $0.002。
 **这是唯一能验证 LLM 层真的通的方式，单测全是桩。**

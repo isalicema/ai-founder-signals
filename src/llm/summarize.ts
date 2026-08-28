@@ -1,11 +1,10 @@
 import { z } from 'zod';
-import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import { TOPICS, sanitizeTags, type Topic } from '../pipeline/topics.js';
 import { checkSummary, stripQuotedSpeech } from './guards.js';
-import { anthropic, costOf, digestOf, modelFor, type UsageLedger } from './provider.js';
+import { completeJsonValidated, llmProvider, type UsageLedger } from './provider.js';
 
 const AnalysisSchema = z.object({
-  summary: z.string(),
+  summary: z.string().min(1),
   tags: z.array(z.string()),
   persons: z.array(z.string()),
   companies: z.array(z.string()),
@@ -22,7 +21,7 @@ export interface ItemAnalysis {
 }
 
 /** 与 prompts/summarize.md 保持一致。改这里必须同步改那份文件。 */
-const SYSTEM = `为这场 AI 创始人访谈生成 feed 卡片信息。
+const SYSTEM = `为这场 AI 创始人访谈生成 feed 卡片信息，以 json 格式输出。
 
 🚫 硬约束：
 1. 禁止输出任何引号包裹的原话。不要写「他说："……"」，不要摘录原句，只写概括。
@@ -51,7 +50,10 @@ summary 写法（150-250 字，原文是英文就用英文写）：
 判断标准：读完这段，应该能回答「我要不要花 40 分钟看原文」。
 写得笼统（「探讨了 Agent 的未来」）等于没写。
 
-persons 填受访者姓名（用文中出现的写法），companies 填公司名。`;
+persons 填受访者姓名（用文中出现的写法），companies 填公司名。
+
+只输出 json，不要任何其它文字。格式示例：
+{"summary": "……", "tags": ["Agent", "商业模式", "组织与人才"], "persons": ["某某某"], "companies": ["某公司"]}`;
 
 export interface SummarizeInput {
   title: string;
@@ -63,30 +65,23 @@ export async function summarizeItem(
   input: SummarizeInput,
   ledger?: UsageLedger,
 ): Promise<ItemAnalysis> {
-  const model = modelFor('summary');
   const warnings: string[] = [];
   const content = `标题：${input.title}\n来源：${input.sourceName}\n正文/字幕：\n${input.body}`;
 
-  const call = async (corrective?: string) => {
-    const started = Date.now();
-    const response = await anthropic().messages.parse({
-      model,
-      max_tokens: 2048,
-      system: corrective ? `${SYSTEM}\n\n⚠️ 上一次输出违反了硬约束 1：${corrective}` : SYSTEM,
-      messages: [{ role: 'user', content }],
-      output_config: { format: zodOutputFormat(AnalysisSchema) },
-    });
-    ledger?.add({
-      task: 'summary',
-      model,
-      inputTokens: response.usage.input_tokens,
-      outputTokens: response.usage.output_tokens,
-      costUsd: costOf(model, response.usage.input_tokens, response.usage.output_tokens),
-      inputDigest: digestOf(content),
-      ms: Date.now() - started,
-    });
-    return response.parsed_output;
-  };
+  const call = async (corrective?: string) =>
+    completeJsonValidated(
+      {
+        task: 'summary',
+        system: corrective ? `${SYSTEM}\n\n⚠️ 上一次输出违反了硬约束 1：${corrective}` : SYSTEM,
+        user: content,
+        maxTokens: 2048,
+      },
+      (data) => {
+        const r = AnalysisSchema.safeParse(data);
+        return r.success ? r.data : null;
+      },
+      { ledger },
+    );
 
   let parsed = await call();
   if (!parsed) throw new Error('summarize_parse_failed');
@@ -116,7 +111,7 @@ export async function summarizeItem(
     tags,
     persons: parsed.persons.map((p) => p.trim()).filter(Boolean),
     companies: parsed.companies.map((c) => c.trim()).filter(Boolean),
-    modelVersion: model,
+    modelVersion: `${llmProvider().name}/${llmProvider().modelFor('summary')}`,
     warnings,
   };
 }
