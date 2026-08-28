@@ -1,0 +1,16 @@
+{
+  "name": "ai-founder-signals",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "AI 创始人一手访谈探测器 — collection-manager 的前置漏斗",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
