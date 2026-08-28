@@ -1,5 +1,5 @@
-import { FeedClient } from './feed-client.js';
-import { loadFeed } from '../feed/data.js';
+import { FeedClient } from './feed-client';
+import { loadFeed } from '../feed/data';
 
 export const dynamic = 'force-dynamic';
 

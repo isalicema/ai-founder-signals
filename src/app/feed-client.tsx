@@ -1,14 +1,14 @@
 'use client';
 
 import { useMemo, useReducer, useState, useTransition, type CSSProperties } from 'react';
-import { applyFeedAction } from './actions.js';
+import { applyFeedAction } from './actions';
 import {
   applyLocalFeedAction,
   EMPTY_FILTERS,
   feedOptions,
   feedStats,
   splitFeed,
-} from '../feed/model.js';
+} from '../feed/model';
 import type {
   FeedFilters,
   FeedItemAction,
@@ -16,7 +16,7 @@ import type {
   FeedMediaType,
   FeedPayload,
   FeedRegion,
-} from '../feed/types.js';
+} from '../feed/types';
 
 const mediaLabels: Record<FeedMediaType, string> = {
   article: '文章',
@@ -33,7 +33,7 @@ const mediaMarks: Record<FeedMediaType, string> = {
 export function FeedClient({ payload }: { payload: FeedPayload }) {
   const [items, dispatch] = useReducer(applyLocalFeedAction, payload.items);
   const [filters, setFilters] = useState<FeedFilters>(EMPTY_FILTERS);
-  const [notice, setNotice] = useState(payload.notice ?? '');
+  const [notice, setNotice] = useState('');
   const [isPending, startTransition] = useTransition();
   const options = useMemo(() => feedOptions(items), [items]);
   const stats = useMemo(() => feedStats(items), [items]);
@@ -81,7 +81,7 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
           <div className="briefing-note">
             <span className="briefing-index">今日简报</span>
             <p>先看新面孔与密集发声，再决定哪一场值得带走。</p>
-            <small>更新 {generatedAt.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</small>
+            <small title={payload.notice}>更新 {generatedAt.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })} · {payload.mode === 'demo' ? '演示数据' : '数据库实时'}</small>
           </div>
         </div>
 
@@ -343,7 +343,7 @@ function SignalCard({
             aria-label="这条不相关，移入低分内容"
             title="不相关"
             onClick={() => onAction({ type: 'irrelevant', itemId: item.id, at: actionAt() }, '已移入低分内容')}
-          >↓</button>
+          >👎</button>
           <button
             type="button"
             className={`icon-action ${item.tier === 'highlight' ? 'is-active' : ''}`}
@@ -352,7 +352,7 @@ function SignalCard({
             title="好内容"
             disabled={item.tier === 'highlight' || pending}
             onClick={() => onAction({ type: 'great', itemId: item.id, at: actionAt() }, '已置为高亮')}
-          >↑</button>
+          >👍</button>
         </div>
       </div>
     </article>

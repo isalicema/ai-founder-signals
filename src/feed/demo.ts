@@ -1,4 +1,4 @@
-import type { FeedItemView, FeedPayload } from './types.js';
+import type { FeedItemView, FeedPayload } from './types';
 
 const hour = 60 * 60 * 1000;
 

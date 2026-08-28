@@ -1,4 +1,4 @@
-import type { FeedFilters, FeedItemAction, FeedItemView, FeedTier } from './types.js';
+import type { FeedFilters, FeedItemAction, FeedItemView, FeedTier } from './types';
 
 export const EMPTY_FILTERS: FeedFilters = {
   person: '',

@@ -133,7 +133,7 @@ summary:focus-visible {
 .masthead-main {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
-  align-items: end;
+  align-items: flex-end;
   gap: 8vw;
   padding: clamp(42px, 7vw, 94px) 0 clamp(38px, 6vw, 72px);
 }
@@ -258,7 +258,7 @@ summary:focus-visible {
   top: 12px;
   display: grid;
   grid-template-columns: 185px 1fr auto;
-  align-items: end;
+  align-items: flex-end;
   gap: 22px;
   margin: 26px 0 46px;
   padding: 16px;
@@ -447,7 +447,7 @@ summary:focus-visible {
 
 .stream-heading {
   display: flex;
-  align-items: end;
+  align-items: flex-end;
   justify-content: space-between;
   margin-bottom: 22px;
   padding-bottom: 14px;
@@ -853,7 +853,7 @@ summary:focus-visible {
   border-radius: 50%;
   background: transparent;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.86rem;
   font-weight: 800;
 }
 

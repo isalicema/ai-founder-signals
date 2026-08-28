@@ -1,7 +1,7 @@
 import { desc, eq, gte, sql } from 'drizzle-orm';
-import { createDatabaseConnection } from '../db/client.js';
-import { entities, items, sources } from '../db/schema.js';
-import { createDemoFeed } from './demo.js';
+import { createDatabaseConnection } from '../db/client';
+import { entities, items, sources } from '../db/schema';
+import { createDemoFeed } from './demo';
 import type {
   FeedEntityRef,
   FeedItemView,
@@ -9,7 +9,7 @@ import type {
   FeedPayload,
   FeedTier,
   MonthlyMention,
-} from './types.js';
+} from './types';
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 const NEW_ENTITY_WINDOW_MS = 60 * 60 * 1000;
