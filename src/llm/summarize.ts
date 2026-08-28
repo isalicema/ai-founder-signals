@@ -55,24 +55,77 @@ persons 填受访者姓名（用文中出现的写法），companies 填公司�
 只输出 json，不要任何其它文字。格式示例：
 {"summary": "……", "tags": ["Agent", "商业模式", "组织与人才"], "persons": ["某某某"], "companies": ["某公司"]}`;
 
+/**
+ * 送进摘要的正文上限。
+ *
+ * 实测一条 78,992 字的 YouTube 字幕连续两次让模型返回不合法结构
+ * （summarize_parse_failed），白花 $0.0114。而我们只要 200 字概括，
+ * 不需要读完整场。头尾各留一段：开头有嘉宾与议题，结尾常有总结与判断，
+ * 中间重复度最高。
+ */
+export const MAX_BODY_CHARS = 40_000;
+
+export class SummarizeError extends Error {
+  readonly code: string;
+  constructor(code: string) {
+    super(code);
+    this.name = 'SummarizeError';
+    this.code = code;
+  }
+}
+
+export function clampBody(body: string, max = MAX_BODY_CHARS): { text: string; clamped: boolean } {
+  if (body.length <= max) return { text: body, clamped: false };
+  const head = Math.floor(max * 0.7);
+  const tail = max - head;
+  return {
+    text: `${body.slice(0, head)}\n\n［中间省略 ${body.length - max} 字］\n\n${body.slice(-tail)}`,
+    clamped: true,
+  };
+}
+
 export interface SummarizeInput {
   title: string;
   sourceName: string;
   body: string;
+  provenance?: 'body' | 'transcript' | 'shownotes';
 }
+
+/**
+ * 按正文来源追加的约束。
+ *
+ * 由来：小宇宙不给逐字稿，我们改用单集页内嵌的 show notes。但 show notes 是
+ * **节目方撰写的说明与大纲，不是对话实录**——基于它生成的摘要若写成
+ * 「创始人说……」就是在冒充第一人称表达。星子在 M4 里为此专门写过一条测试
+ * 拒绝把 show notes 当逐字稿，这个顾虑是对的，所以做成显式约束而不是绕过。
+ */
+const PROVENANCE_NOTE: Record<string, string> = {
+  shownotes:
+    '\n\n⚠️ 本次输入是**节目方撰写的单集说明/大纲（show notes）**，不是对话实录。\n' +
+    '- 只概括其中确有的信息，不要虚构对话细节，不要写成受访者的第一人称表达；\n' +
+    '- 大纲能说明「这期会谈什么」，但说明不了「实际谈出了什么」——\n' +
+    '  写不出具体判断时就如实概括议题范围，不要为了显得具体而编造数字或结论。',
+  transcript:
+    '\n\n本次输入是视频字幕转写，可能有断句错误和错别字，按语义理解即可。',
+};
 
 export async function summarizeItem(
   input: SummarizeInput,
   ledger?: UsageLedger,
 ): Promise<ItemAnalysis> {
   const warnings: string[] = [];
-  const content = `标题：${input.title}\n来源：${input.sourceName}\n正文/字幕：\n${input.body}`;
+  const { text: body, clamped } = clampBody(input.body);
+  if (clamped) warnings.push(`body_clamped:${input.body.length}→${MAX_BODY_CHARS}`);
+  const content = `标题：${input.title}\n来源：${input.sourceName}\n正文/字幕：\n${body}`;
+
+  const provenanceNote = PROVENANCE_NOTE[input.provenance ?? 'body'] ?? '';
+  const base = SYSTEM + provenanceNote;
 
   const call = async (corrective?: string) =>
     completeJsonValidated(
       {
         task: 'summary',
-        system: corrective ? `${SYSTEM}\n\n⚠️ 上一次输出违反了硬约束 1：${corrective}` : SYSTEM,
+        system: corrective ? `${base}\n\n⚠️ 上一次输出违反了硬约束 1：${corrective}` : base,
         user: content,
         maxTokens: 2048,
       },
@@ -80,11 +133,11 @@ export async function summarizeItem(
         const r = AnalysisSchema.safeParse(data);
         return r.success ? r.data : null;
       },
-      { ledger },
+      { ledger, maxRetries: 2 },
     );
 
   let parsed = await call();
-  if (!parsed) throw new Error('summarize_parse_failed');
+  if (!parsed) throw new SummarizeError('summarize_parse_failed');
 
   // 引文校验：违规则重试一次，仍违规就直接摘掉引文内容
   let check = checkSummary(parsed.summary);

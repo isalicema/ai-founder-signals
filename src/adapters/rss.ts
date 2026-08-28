@@ -11,6 +11,7 @@ import { parseFeed } from './feedParser.js';
 import { AdapterError, FetchBlockedError } from './errors.js';
 import { extractArticleText } from './html.js';
 import { parsePodcastPage } from './podcastPage.js';
+import { extractEmbeddedNotes } from './embeddedNotes.js';
 
 export interface RssAdapterOptions {
   fetcher?: FetchFn;
@@ -50,9 +51,23 @@ export class RssAdapter implements SourceAdapter {
 
   async fetch(item: DiscoveredItem, context: AdapterFetchContext): Promise<EphemeralContent> {
     void context.workspace;
-    if (item.mediaType === 'podcast' || item.mediaType === 'video') {
+    if (item.mediaType === 'video') {
       throw new FetchBlockedError('transcript_unavailable');
     }
+
+    // 播客：没有逐字稿，但单集页往往内嵌了 show notes。
+    // 对我们的用途它甚至比逐字稿更好——已经结构化，没有口语废话。
+    if (item.mediaType === 'podcast') {
+      const page = await fetchTextResource(item.url, {
+        fetcher: this.#fetcher,
+        maxBytes: 10 * 1024 * 1024,
+        accept: 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.5',
+      });
+      const notes = extractEmbeddedNotes(page.text);
+      if (!notes) throw new FetchBlockedError('transcript_unavailable');
+      return { rawText: notes, language: item.languageHint ?? 'und', provenance: 'shownotes' };
+    }
+
     const response = await fetchTextResource(item.url, {
       fetcher: this.#fetcher,
       maxBytes: 10 * 1024 * 1024,
@@ -60,7 +75,7 @@ export class RssAdapter implements SourceAdapter {
     });
     const rawText = extractArticleText(response.text);
     if (rawText.length < 80) throw new FetchBlockedError('article_body_missing');
-    return { rawText, language: item.languageHint ?? 'und' };
+    return { rawText, language: item.languageHint ?? 'und', provenance: 'body' };
   }
 
   #parse(xml: string, sourceUrl: string, source: AdapterSource): DiscoveredItem[] {

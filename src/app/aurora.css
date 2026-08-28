@@ -941,7 +941,7 @@ html[data-skin="aurora"] .card-actions > button:not(.icon-action):hover {
   color: var(--accent-deep);
 }
 
-html[data-skin="aurora"] .card-actions button.is-active,
+html[data-skin="aurora"] .card-actions > button:not(.icon-action).is-active,
 html[data-skin="aurora"] .card-actions button:disabled {
   cursor: default;
   opacity: 0.55;
@@ -969,6 +969,8 @@ html[data-skin="aurora"] .icon-action:hover {
 html[data-skin="aurora"] .icon-action.is-active {
   border-color: transparent;
   background: var(--lime);
+  cursor: pointer;
+  opacity: 1;
 }
 
 /* 空态 */
@@ -1144,12 +1146,15 @@ html[data-skin="aurora"] .folded-empty {
 /* 页脚 */
 
 html[data-skin="aurora"] .feed-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   margin-top: 48px;
-  padding: 16px 4px;
+  padding: 0 4px;
   border-top: 1px solid var(--hairline);
+  border-bottom: 0;
+}
+
+html[data-skin="aurora"] .footer-main {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--ink);
 }
 
 html[data-skin="aurora"] .feed-footer p,
@@ -1175,6 +1180,16 @@ html[data-skin="aurora"] .feed-footer small {
   font-size: 0.6rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+}
+
+html[data-skin="aurora"] .footer-copyright a {
+  border-bottom-color: rgba(76, 93, 245, 0.28);
+  color: var(--ink-soft);
+}
+
+html[data-skin="aurora"] .footer-copyright a:hover {
+  border-bottom-color: var(--lime-deep);
+  color: var(--accent-deep);
 }
 
 /* Toast */
@@ -1324,7 +1339,7 @@ html[data-skin="aurora"] .toast button {
   html[data-skin="aurora"] .folded-row { grid-template-columns: 1fr; gap: 7px; padding: 13px 14px; }
   html[data-skin="aurora"] .folded-row > button { justify-self: start; }
 
-  html[data-skin="aurora"] .feed-footer { flex-direction: column; align-items: flex-start; gap: 9px; }
+  html[data-skin="aurora"] .footer-main { flex-direction: column; align-items: flex-start; gap: 9px; }
 
   html[data-skin="aurora"] .toast { right: 12px; bottom: 12px; }
 }

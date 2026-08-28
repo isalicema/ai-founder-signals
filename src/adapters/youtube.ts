@@ -102,7 +102,7 @@ async function readSubtitle(subtitle: { path: string; language: string }): Promi
   if (info.size > 10 * 1024 * 1024) throw new AdapterError('response_too_large', { retryable: false });
   const rawText = vttToText(await readFile(subtitle.path, 'utf8'));
   if (rawText.length < 20) throw new FetchBlockedError('youtube_no_subtitles');
-  return { rawText, language: subtitle.language };
+  return { rawText, language: subtitle.language, provenance: 'transcript' };
 }
 
 async function selectSubtitleFile(

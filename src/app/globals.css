@@ -883,7 +883,7 @@ summary:focus-visible {
   color: var(--ink);
 }
 
-.card-actions button.is-active,
+.card-actions > button:not(.icon-action).is-active,
 .card-actions button:disabled {
   cursor: default;
   opacity: 0.6;
@@ -894,6 +894,8 @@ summary:focus-visible {
 }
 
 .icon-action {
+  position: relative;
+  isolation: isolate;
   display: grid;
   width: 36px;
   height: 36px;
@@ -912,6 +914,19 @@ summary:focus-visible {
   background: var(--signal);
 }
 
+.icon-action.is-active {
+  cursor: pointer;
+  opacity: 1;
+}
+
+.action-glyph {
+  position: relative;
+  z-index: 1;
+  display: block;
+  opacity: 1;
+  line-height: 1;
+}
+
 /* Editorial density pass
    Keep the paper edition airy through columns and rules, while spending less
    vertical space on padding, controls, and repeated metadata. */
@@ -921,8 +936,8 @@ summary:focus-visible {
   }
 
   html[data-skin="editorial"] .signal-card {
-    grid-template-columns: clamp(126px, 15vw, 186px) minmax(0, 1fr);
-    min-height: 326px;
+    grid-template-columns: clamp(126px, 13.5vw, 176px) minmax(0, 1fr);
+    min-height: 0;
   }
 
   html[data-skin="editorial"] .signal-card.tier-highlight {
@@ -946,7 +961,7 @@ summary:focus-visible {
   }
 
   html[data-skin="editorial"] .card-content {
-    padding: clamp(18px, 2.2vw, 28px);
+    padding: clamp(18px, 2vw, 24px);
   }
 
   html[data-skin="editorial"] .badge-row {
@@ -968,7 +983,7 @@ summary:focus-visible {
 
   html[data-skin="editorial"] .card-title h3 {
     margin-bottom: 9px;
-    font-size: clamp(1.45rem, 2.25vw, 2.2rem);
+    font-size: clamp(1.45rem, 2vw, 1.9rem);
     line-height: 1.08;
   }
 
@@ -1024,67 +1039,6 @@ summary:focus-visible {
     width: 32px;
     height: 32px;
     font-size: 0.78rem;
-  }
-}
-
-/* On a wide desk, summary and decision metadata become parallel reading lanes.
-   This is the largest density gain without truncating any title or summary. */
-@media (min-width: 1121px) {
-  html[data-skin="editorial"] .signal-card {
-    grid-template-columns: clamp(124px, 12.5vw, 166px) minmax(0, 1fr);
-    min-height: 278px;
-  }
-
-  html[data-skin="editorial"] .card-content {
-    display: grid;
-    grid-template-columns: minmax(0, 1.12fr) minmax(260px, 0.88fr);
-    grid-template-rows: auto auto auto auto 1fr auto;
-    column-gap: clamp(20px, 2.4vw, 34px);
-    padding: 18px clamp(20px, 2.2vw, 28px) 17px;
-  }
-
-  html[data-skin="editorial"] .badge-row {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  html[data-skin="editorial"] .card-title {
-    grid-column: 1;
-    grid-row: 2;
-  }
-
-  html[data-skin="editorial"] .card-title h3 {
-    font-size: clamp(1.45rem, 1.8vw, 2.05rem);
-  }
-
-  html[data-skin="editorial"] .entity-line {
-    grid-column: 1;
-    grid-row: 3;
-  }
-
-  html[data-skin="editorial"] .fact-line {
-    grid-column: 1;
-    grid-row: 4;
-    margin-bottom: 0;
-  }
-
-  html[data-skin="editorial"] .ai-summary {
-    grid-column: 2;
-    grid-row: 1 / 6;
-    align-self: stretch;
-    min-height: 0;
-  }
-
-  html[data-skin="editorial"] .tag-list {
-    grid-column: 2;
-    grid-row: 6;
-    align-self: end;
-  }
-
-  html[data-skin="editorial"] .card-actions {
-    grid-column: 1;
-    grid-row: 6;
-    align-self: end;
   }
 }
 
@@ -1253,12 +1207,17 @@ summary:focus-visible {
 }
 
 .feed-footer {
+  margin-top: 70px;
+  padding: 0;
+  border-top: 5px solid var(--ink);
+  border-bottom: 0;
+}
+
+.footer-main {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 70px;
   padding: 18px 0;
-  border-top: 5px solid var(--ink);
   border-bottom: 1px solid var(--ink);
 }
 
@@ -1280,6 +1239,26 @@ summary:focus-visible {
   color: var(--ink-soft);
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.footer-copyright {
+  display: block;
+  padding-top: 15px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.footer-copyright a {
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--line-dark);
+  color: var(--ink);
+  text-decoration: none;
+  transition: color 160ms ease, border-color 160ms ease;
+}
+
+.footer-copyright a:hover {
+  border-bottom-color: var(--signal);
+  color: var(--signal-dark);
 }
 
 .toast {
@@ -1586,7 +1565,7 @@ summary:focus-visible {
     justify-self: start;
   }
 
-  .feed-footer {
+  .footer-main {
     align-items: flex-start;
     flex-direction: column;
     gap: 10px;

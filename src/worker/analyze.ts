@@ -25,7 +25,7 @@ export async function analyzeInWorkspace(
   const simhash = cheapSimhash(content.rawText);
 
   const analysis = await summarizeItem(
-    { title: item.title, sourceName, body: content.rawText },
+    { title: item.title, sourceName, body: content.rawText, provenance: content.provenance },
     ledger,
   );
 

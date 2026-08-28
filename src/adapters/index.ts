@@ -6,3 +6,4 @@ export * from './podcastPage.js';
 export * from './rss.js';
 export * from './youtube.js';
 export * from './registry.js';
+export * from './embeddedNotes.js';

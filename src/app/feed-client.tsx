@@ -222,8 +222,19 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
       </div>
 
       <footer className="feed-footer">
-        <p><span>AFS</span> 只负责发现；判断与深读仍由 Alice 完成。</p>
-        <small>Raw material never leaves the worker.</small>
+        <div className="footer-main">
+          <p><span>AFS</span> 只负责发现；判断与深读仍由 Alice 完成。</p>
+          <small>Raw material never leaves the worker.</small>
+        </div>
+        <small className="footer-copyright">
+          © {generatedAt.getFullYear()}{' '}
+          <a
+            href="https://www.machiwhale.com/"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="访问 Machiwhale Studio 官网（新窗口）"
+          >Machiwhale Studio</a>
+        </small>
       </footer>
 
       <div className={`toast ${notice ? 'is-visible' : ''}`} role="status" aria-live="polite">
@@ -399,20 +410,26 @@ function SignalCard({
           <span className="action-spacer" />
           <button
             type="button"
+            className={`icon-action ${item.tier === 'highlight' ? 'is-active' : ''}`}
+            aria-label={item.tier === 'highlight' ? '取消好内容标记' : '这是好内容，置为高亮'}
+            aria-pressed={item.tier === 'highlight'}
+            title={item.tier === 'highlight' ? '取消好内容标记' : '好内容'}
+            disabled={pending}
+            onClick={() => {
+              const highlighted = item.tier !== 'highlight';
+              onAction(
+                { type: 'set_highlight', itemId: item.id, highlighted, at: actionAt() },
+                highlighted ? '已置为高亮' : '已取消高亮',
+              );
+            }}
+          ><span className="action-glyph" aria-hidden="true">👍</span></button>
+          <button
+            type="button"
             className="icon-action"
             aria-label="这条不相关，移入低分内容"
             title="不相关"
             onClick={() => onAction({ type: 'irrelevant', itemId: item.id, at: actionAt() }, '已移入低分内容')}
           >👎</button>
-          <button
-            type="button"
-            className={`icon-action ${item.tier === 'highlight' ? 'is-active' : ''}`}
-            aria-label="这是好内容，置为高亮"
-            aria-pressed={item.tier === 'highlight'}
-            title="好内容"
-            disabled={item.tier === 'highlight' || pending}
-            onClick={() => onAction({ type: 'great', itemId: item.id, at: actionAt() }, '已置为高亮')}
-          >👍</button>
         </div>
       </div>
     </article>
@@ -436,7 +453,7 @@ function FoldedRow({
         <p>{item.sourceName} · {item.rejectReason ?? '低分信号'}</p>
         <span>🤖 AI 摘要 · 未生成</span>
       </div>
-      <button type="button" onClick={() => onAction({ type: 'great', itemId: item.id, at: actionAt() }, '已恢复并置为高亮')}>↑ 恢复高亮</button>
+      <button type="button" onClick={() => onAction({ type: 'set_highlight', itemId: item.id, highlighted: true, at: actionAt() }, '已恢复并置为高亮')}>↑ 恢复高亮</button>
     </article>
   );
 }

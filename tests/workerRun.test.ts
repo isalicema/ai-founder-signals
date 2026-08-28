@@ -38,3 +38,18 @@ describe('任务载荷序列化', () => {
     expect(round.publishedAt).toBeNull();
   });
 });
+
+describe('管线错误码可定位（实测回归）', () => {
+  it('⭐ summarize_parse_failed 不再被记成 unclassified_error', async () => {
+    const { SummarizeError } = await import('../src/llm/summarize.js');
+    expect(classify(new SummarizeError('summarize_parse_failed'))).toBe('summarize_parse_failed');
+  });
+
+  it('Postgres SQLSTATE 记成 db_XXXXX', () => {
+    expect(classify(Object.assign(new Error('x'), { code: '22003' }))).toBe('db_22003');
+  });
+
+  it('带内容的裸异常仍然只记 unclassified_error', () => {
+    expect(classify(new Error('创始人说我们花了一年'))).toBe('unclassified_error');
+  });
+});

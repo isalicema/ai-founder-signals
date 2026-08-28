@@ -137,6 +137,9 @@ export function classify(error: unknown): string {
   if (error instanceof AdapterError) return failureCode({ code: error.code });
   const code = (error as { code?: unknown } | null)?.code;
   if (typeof code === 'string' && /^[0-9A-Z]{5}$/.test(code)) return `db_${code}`;
+  // 我们自己定义的管线错误码（如 summarize_parse_failed）——是代码常量不是用户内容，
+  // 记下来安全且可定位。实测排查时 unclassified_error 什么都没告诉我。
+  if (typeof code === 'string' && /^[a-z][a-z0-9_]{2,}$/.test(code)) return failureCode({ code });
   if (error instanceof Error && /timeout|abort/i.test(error.name)) return 'timeout';
   return 'unclassified_error';
 }

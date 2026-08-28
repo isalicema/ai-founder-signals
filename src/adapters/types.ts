@@ -22,10 +22,15 @@ export interface DiscoveredItem {
   languageHint?: string;
 }
 
+/** 正文来源。摘要器必须知道自己在读什么，否则会把节目方写的大纲当成对话实录。 */
+export type ContentProvenance = 'body' | 'transcript' | 'shownotes';
+
 /** Raw content exists only inside a single worker process and temporary workspace. */
 export interface EphemeralContent {
   rawText: string;
   language: string;
+  /** 缺省按正文处理 */
+  provenance?: ContentProvenance;
 }
 
 export interface AdapterFetchContext {

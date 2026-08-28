@@ -37,3 +37,26 @@ describe('引文守卫（prompt 是请求，代码才是保证）', () => {
     expect(checkSummary('太短').ok).toBe(true);   // 长度不影响 ok
   });
 });
+
+describe('超长正文裁剪（实测回归）', () => {
+  it('⭐ 78,992 字的字幕会被裁到上限内 —— 实测该长度连续两次解析失败', async () => {
+    const { clampBody, MAX_BODY_CHARS } = await import('../src/llm/summarize.js');
+    const r = clampBody('字'.repeat(78_992));
+    expect(r.clamped).toBe(true);
+    expect(r.text.length).toBeLessThan(MAX_BODY_CHARS + 40);
+  });
+
+  it('保留头尾两段：开头有嘉宾与议题，结尾常有总结', async () => {
+    const { clampBody } = await import('../src/llm/summarize.js');
+    const body = 'HEAD_MARKER' + '中'.repeat(60_000) + 'TAIL_MARKER';
+    const r = clampBody(body);
+    expect(r.text).toContain('HEAD_MARKER');
+    expect(r.text).toContain('TAIL_MARKER');
+    expect(r.text).toContain('中间省略');
+  });
+
+  it('正常长度不动', async () => {
+    const { clampBody } = await import('../src/llm/summarize.js');
+    expect(clampBody('短正文').clamped).toBe(false);
+  });
+});

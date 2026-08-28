@@ -82,19 +82,35 @@ describe('RssAdapter', () => {
     expect(items[0]?.admissionSnippet?.length).toBe(500);
   });
 
-  it('does not pretend podcast show notes are a transcript', async () => {
-    const adapter = new RssAdapter();
+  // 2026-08-29 行为变更：原先播客一律判 transcript_unavailable。实测小宇宙
+  // 单集页内嵌了完整 show notes（一集 2796 字，含嘉宾背景与带时间戳的 OUTLINE），
+  // 全部弃用太浪费。但这条测试原本的顾虑——「不要把 show notes 当逐字稿」——
+  // 仍然成立，所以改为标注来源：provenance='shownotes'，摘要器据此收紧措辞，
+  // 不把节目方写的大纲当成受访者的第一人称表达。
+  it('podcast 用 show notes 但标注来源，不冒充逐字稿', async () => {
+    const notes = '嘉宾背景与话题大纲。'.repeat(60);
+    const html = `<script id="__NEXT_DATA__">${JSON.stringify({ episode: { shownotes: notes } })}</script>`;
+    const adapter = new RssAdapter({ fetcher: async () => new Response(html, {
+      headers: { 'content-type': 'text/html' },
+    }) });
     const item: DiscoveredItem = {
-      externalId: 'episode-1',
-      url: 'https://example.com/episode-1',
-      title: 'Podcast episode',
-      publishedAt: null,
-      mediaType: 'podcast',
+      externalId: 'episode-1', url: 'https://example.com/episode-1',
+      title: 'Podcast episode', publishedAt: null, mediaType: 'podcast',
     };
+    const content = await adapter.fetch(item, { workspace: '/unused' });
+    expect(content.provenance).toBe('shownotes');
+    expect(content.rawText.length).toBeGreaterThan(300);
+  });
 
-    await expect(adapter.fetch(item, { workspace: '/unused' })).rejects.toMatchObject({
-      code: 'transcript_unavailable',
-      itemStatus: 'needs_body',
+  it('没有可用 show notes 时仍然判 needs_body', async () => {
+    const adapter = new RssAdapter({ fetcher: async () => new Response('<html>空</html>', {
+      headers: { 'content-type': 'text/html' },
+    }) });
+    await expect(adapter.fetch({
+      externalId: 'e2', url: 'https://example.com/e2', title: 't',
+      publishedAt: null, mediaType: 'podcast',
+    }, { workspace: '/unused' })).rejects.toMatchObject({
+      code: 'transcript_unavailable', itemStatus: 'needs_body',
     } satisfies Partial<FetchBlockedError>);
   });
 

@@ -69,6 +69,7 @@ because users needed reliability.
     expect(content).toEqual({
       rawText: 'We chose a narrow product first because users needed reliability.',
       language: 'en',
+      provenance: 'transcript',
     });
     await expect(access(capturedWorkspace)).rejects.toThrow();
   });

@@ -78,8 +78,12 @@ export function applyLocalFeedAction(items: FeedItemView[], action: FeedItemActi
         return { ...item, archiveRequestedAt: item.archiveRequestedAt ?? action.at };
       case 'irrelevant':
         return { ...item, tier: 'folded', readAt: item.readAt ?? action.at };
-      case 'great':
-        return { ...item, tier: 'highlight', readAt: item.readAt ?? action.at };
+      case 'set_highlight':
+        return {
+          ...item,
+          tier: action.highlighted ? 'highlight' : 'feed',
+          readAt: action.highlighted ? item.readAt ?? action.at : item.readAt,
+        };
     }
   });
 }

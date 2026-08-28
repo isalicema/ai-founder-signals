@@ -34,10 +34,23 @@ describe('M5 feed model', () => {
     const demoted = applyLocalFeedAction(demo, { type: 'irrelevant', itemId: 'demo-perplexity-video', at });
     expect(demoted.find((item) => item.id === 'demo-perplexity-video')?.tier).toBe('folded');
 
-    const restored = applyLocalFeedAction(demoted, { type: 'great', itemId: 'demo-perplexity-video', at });
+    const restored = applyLocalFeedAction(demoted, {
+      type: 'set_highlight',
+      itemId: 'demo-perplexity-video',
+      highlighted: true,
+      at,
+    });
     expect(restored.find((item) => item.id === 'demo-perplexity-video')?.tier).toBe('highlight');
 
-    const queued = applyLocalFeedAction(restored, { type: 'archive_requested', itemId: 'demo-perplexity-video', at });
+    const unhighlighted = applyLocalFeedAction(restored, {
+      type: 'set_highlight',
+      itemId: 'demo-perplexity-video',
+      highlighted: false,
+      at,
+    });
+    expect(unhighlighted.find((item) => item.id === 'demo-perplexity-video')?.tier).toBe('feed');
+
+    const queued = applyLocalFeedAction(unhighlighted, { type: 'archive_requested', itemId: 'demo-perplexity-video', at });
     expect(queued.find((item) => item.id === 'demo-perplexity-video')?.archiveRequestedAt).toBe(at);
   });
 
