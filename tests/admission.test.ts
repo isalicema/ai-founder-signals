@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { admit, type LlmJudge } from '../src/pipeline/admission/index.js';
+import { admit, evaluateStructural, type LlmJudge } from '../src/pipeline/admission/index.js';
 
 const src = (purity: number) => ({ purity, name: 'test' });
 const article = { mediaType: 'article' as const, contentChars: 12000 };
@@ -68,5 +68,31 @@ describe('§4.0 三层准入漏斗', () => {
     expect(r.accepted).toBe(true);
     expect(r.titleSignalScore).toBeLessThan(1.0);
     expect(r.structuralNotes.join()).toContain('short_media');
+  });
+});
+
+describe('⚠️ 结构性降权：实测漏洞回归', () => {
+  it('⭐ YouTube RSS 不给时长，短切片只能靠字幕字数识别', async () => {
+    // 发现阶段：只有标题，没有时长也没有字数 → 降权不生效，正常放行
+    const atDiscovery = await admit(
+      { title: 'Is Your Chatbot Conscious?', mediaType: 'video', source: src(0.4) },
+      undefined,
+    );
+    expect(atDiscovery.structuralNotes).toHaveLength(0);
+
+    // 抓完字幕：1083 字的切片 → 必须降权
+    const afterFetch = evaluateStructural({ mediaType: 'video', contentChars: 1083 });
+    expect(afterFetch.factor).toBeLessThan(1);
+    expect(afterFetch.notes.join()).toContain('short_body');
+  });
+
+  it('完整访谈的字幕长度不降权', () => {
+    expect(evaluateStructural({ mediaType: 'video', contentChars: 40000 }).factor).toBe(1);
+  });
+
+  it('时长与字数同时偏短 → 叠加降权', () => {
+    const r = evaluateStructural({ mediaType: 'video', durationSeconds: 180, contentChars: 800 });
+    expect(r.factor).toBeCloseTo(0.36, 5);
+    expect(r.notes).toHaveLength(2);
   });
 });

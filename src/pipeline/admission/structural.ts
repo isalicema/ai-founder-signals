@@ -21,18 +21,19 @@ export function evaluateStructural(input: StructuralInput): StructuralSignal {
   const notes: string[] = [];
   let factor = 1.0;
 
-  if (input.mediaType !== 'article') {
-    const d = input.durationSeconds;
-    if (typeof d === 'number' && d > 0 && d < MIN_MEDIA_SECONDS) {
-      factor *= 0.6;
-      notes.push(`short_media:${d}s`);
-    }
-  } else {
-    const c = input.contentChars;
-    if (typeof c === 'number' && c > 0 && c < MIN_ARTICLE_CHARS) {
-      factor *= 0.6;
-      notes.push(`short_article:${c}chars`);
-    }
+  const d = input.durationSeconds;
+  if (input.mediaType !== 'article' && typeof d === 'number' && d > 0 && d < MIN_MEDIA_SECONDS) {
+    factor *= 0.6;
+    notes.push(`short_media:${d}s`);
+  }
+
+  // ⚠️ 字数判据对所有类型都要看，不只文章。
+  //    实测：YouTube RSS 不提供时长，短切片只能靠字幕字数识别出来——
+  //    一条 1083 字的「正片切片」不该和一场完整访谈同等对待。
+  const c = input.contentChars;
+  if (typeof c === 'number' && c > 0 && c < MIN_ARTICLE_CHARS) {
+    factor *= 0.6;
+    notes.push(`short_body:${c}chars`);
   }
   return { factor, notes };
 }

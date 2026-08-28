@@ -1362,6 +1362,10 @@ html[data-skin="aurora"] .masthead-rule {
   display: none;
 }
 
+html[data-skin="aurora"] .briefing-note::before {
+  display: none;
+}
+
 html[data-skin="aurora"] .masthead h1 em {
   position: static;
   left: auto;
@@ -1372,6 +1376,19 @@ html[data-skin="aurora"] .masthead h1 em {
 
 html[data-skin="aurora"] .metric {
   border-right: 0;
+}
+
+html[data-skin="aurora"] .stream-heading {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+html[data-skin="aurora"] .signal-card {
+  min-height: 0;
+}
+
+html[data-skin="aurora"] .signal-card.tier-highlight {
+  border-top-width: 1px;
 }
 
 html[data-skin="aurora"] .reading-rail > p {
@@ -1410,6 +1427,10 @@ html[data-skin="aurora"] .skin-switcher button[aria-pressed="true"] {
 }
 
 @media (max-width: 640px) {
+  html[data-skin="aurora"] .metric:nth-child(-n + 2) {
+    border-bottom: 0;
+  }
+
   html[data-skin="aurora"] .signal-card > .card-seq {
     top: 24px;
     left: 24px;

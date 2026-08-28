@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="16" fill="#14211c"/>
+  <path d="M0 48h32v16H0z" fill="#ef5b32"/>
+  <path d="M32 48h32v16H32z" fill="#d7f34f"/>
+  <text x="32" y="38" fill="#faf8f0" font-family="Arial, sans-serif" font-size="25" font-weight="800" text-anchor="middle">AFS</text>
+</svg>

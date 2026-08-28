@@ -6,7 +6,7 @@ import { createDefaultAdapterRegistry, type AdapterRegistry } from '../adapters/
 import { canonicalizeUrl } from '../adapters/url.js';
 import { FetchBlockedError, AdapterError } from '../adapters/errors.js';
 import type { DiscoveredItem } from '../adapters/types.js';
-import { admit } from '../pipeline/admission/index.js';
+import { admit, evaluateStructural } from '../pipeline/admission/index.js';
 import { scoreTier, normalizeSourceWeight } from '../pipeline/tier/index.js';
 import { createLlmJudge } from '../llm/judge.js';
 import type { UsageLedger } from '../llm/provider.js';
@@ -60,7 +60,7 @@ export async function handleDiscover(
   for (const item of fresh) {
     await ctx.sql`
       insert into public.job (kind, payload, idempotency_key)
-      values ('process', ${ctx.sql.json({ sourceId: source.id, item: serializeItem(item) } as never)}, ${`process:${source.id}:${item.externalId}`})
+      values ('process', ${JSON.stringify({ sourceId: source.id, item: serializeItem(item) })}::jsonb, ${`process:${source.id}:${item.externalId}`})
       on conflict (idempotency_key) do nothing
     `;
   }
@@ -140,9 +140,20 @@ export async function handleProcess(
 
   const persons = await upsertEntities(ctx.db, 'person', analysis.persons);
   const companies = await upsertEntities(ctx.db, 'company', analysis.companies);
+
+  // ⚠️ 实测发现的漏洞：YouTube RSS **不提供时长**，所以准入阶段的结构性降权
+  //    （短视频/短文 ×0.6）对 YouTube 从来没生效过——Lex、Kantrowitz 这类频道
+  //    大量发布正片切片（Clips），会当正片进 feed。
+  //    抓完正文才知道真实长度，这里用真实 contentChars 补算一次。
+  const structural = evaluateStructural({
+    mediaType: item.mediaType,
+    durationSeconds: item.durationSeconds ?? null,
+    contentChars: analysis.contentChars ?? null,
+  });
+
   const tier = scoreTier({
     sourceWeight: normalizeSourceWeight(source.weight),
-    titleSignal: admission.titleSignalScore,
+    titleSignal: +(admission.titleSignalScore * structural.factor).toFixed(4),
     admissionConfidence: admission.admissionConfidence,
     entityStarred: persons.anyStarred || companies.anyStarred,
   });

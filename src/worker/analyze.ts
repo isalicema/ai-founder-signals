@@ -54,11 +54,15 @@ export function cheapSimhash(text: string): bigint {
   }
   let out = 0n;
   for (let b = 0; b < 64; b += 1) if (bits[b]! > 0) out |= 1n << BigInt(b);
-  return out;
+  // ⚠️ Postgres 的 bigint 是**有符号**的（上限 2^63-1）。第 63 位一置就溢出，
+  //    实测约 46% 的条目会因此写不进库。asIntN 把它收进有符号区间；
+  //    位模式不变，所以汉明距完全不受影响。
+  return BigInt.asIntN(64, out);
 }
 
 export function hammingDistance(a: bigint, b: bigint): number {
-  let x = a ^ b;
+  // 用无符号视图数位，否则负数的符号扩展会让计数跑偏
+  let x = BigInt.asUintN(64, a ^ b);
   let n = 0;
   while (x) { x &= x - 1n; n += 1; }
   return n;

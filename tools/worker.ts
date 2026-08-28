@@ -30,8 +30,9 @@ for (const [name, hint] of [
 const connection = createDatabaseConnection({ maxConnections: 2 });
 try {
   if (!flag('--no-enqueue')) {
-    const queued = await enqueueDailyDiscover(connection.db, connection.sql);
+    const { queued, skipped } = await enqueueDailyDiscover(connection.db, connection.sql);
     console.log(`已排 ${queued} 个 discover 任务`);
+    if (skipped.length > 0) console.log(`跳过 ${skipped.length} 个暂无适配器的信源：${skipped.join('、')}`);
   }
   const report = await runWorker(connection.db, connection.sql, {
     maxJobs: value('--max-jobs', 200),

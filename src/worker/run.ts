@@ -4,6 +4,7 @@ import type { Sql } from 'postgres';
 import { sources } from '../db/schema.js';
 import { claimJob, completeJob, failJob, failureCode } from './jobQueue.js';
 import { createContext, handleDiscover, handleProcess, type HandlerContext } from './handlers.js';
+import { createDefaultAdapterRegistry } from '../adapters/registry.js';
 import { AdapterError } from '../adapters/errors.js';
 import { UsageLedger } from '../llm/provider.js';
 
@@ -23,23 +24,43 @@ export interface RunReport {
   stoppedBy: 'drained' | 'max_jobs' | 'budget';
 }
 
+export interface EnqueueReport {
+  queued: number;
+  /** 启用了但当前没有对应适配器的信源（例如 html 在 HtmlAdapter 落地之前） */
+  skipped: string[];
+}
+
 /**
- * 为每个启用的信源排一个当日 discover 任务。
+ * 为每个启用**且有适配器可用**的信源排一个当日 discover 任务。
  * idempotency_key 带日期 → 同一天重复调用不会产生重复任务。
+ *
+ * ⚠️ 明知跑不通就不排队。否则每天会白排一批必失败的任务，
+ *    把 consecutive_failures 刷高、在运维面板里制造假故障。
+ *    等适配器落地，这些信源会自动恢复排班，不需要改数据。
  */
-export async function enqueueDailyDiscover(db: AfsDatabase, sql: Sql, day = today()): Promise<number> {
-  const enabled = await db.select({ id: sources.id }).from(sources).where(eq(sources.enabled, true));
+export async function enqueueDailyDiscover(
+  db: AfsDatabase, sql: Sql, day = today(),
+): Promise<EnqueueReport> {
+  const enabled = await db.select().from(sources).where(eq(sources.enabled, true));
+  const registry = createDefaultAdapterRegistry();
+  const skipped: string[] = [];
   let queued = 0;
   for (const source of enabled) {
+    try {
+      registry.forSource(source);
+    } catch {
+      skipped.push(`${source.name}(${source.ingestMethod})`);
+      continue;
+    }
     const rows = await sql`
       insert into public.job (kind, payload, idempotency_key)
-      values ('discover', ${sql.json({ sourceId: source.id } as never)}, ${`discover:${source.id}:${day}`})
+      values ('discover', ${JSON.stringify({ sourceId: source.id })}::jsonb, ${`discover:${source.id}:${day}`})
       on conflict (idempotency_key) do nothing
       returning id
     `;
     if (rows.length > 0) queued += 1;
   }
-  return queued;
+  return { queued, skipped };
 }
 
 /**
@@ -105,9 +126,17 @@ async function dispatch(ctx: HandlerContext, kind: string, payload: unknown): Pr
   throw new AdapterError('unsupported_ingest_method', { retryable: false });
 }
 
-/** 异常 → 安全分类码。绝不泄漏异常消息本身。 */
+/**
+ * 异常 → 安全分类码。绝不泄漏异常消息本身。
+ *
+ * ⚠️ 但也不能一律记成 unclassified_error——实测排查一个真实故障时，
+ *    那个码什么都没告诉我。Postgres 的 SQLSTATE 是**结构化错误码、不含数据**，
+ *    记下来既安全又能直接定位（22003=数值越界、23505=唯一键冲突、23514=检查约束）。
+ */
 export function classify(error: unknown): string {
   if (error instanceof AdapterError) return failureCode({ code: error.code });
+  const code = (error as { code?: unknown } | null)?.code;
+  if (typeof code === 'string' && /^[0-9A-Z]{5}$/.test(code)) return `db_${code}`;
   if (error instanceof Error && /timeout|abort/i.test(error.name)) return 'timeout';
   return 'unclassified_error';
 }
