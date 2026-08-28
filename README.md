@@ -13,8 +13,11 @@ AI 创始人一手访谈探测器 —— `collection-manager` 的前置漏斗。
 |---|---|---|
 | 准入判定规则 + 分档 + entity 归一化 | 妙蛙种子 | ✅ 已完成，27 测试全绿 |
 | 判定 / 摘要 prompt | 妙蛙种子 | ✅ 初版完成 |
-| M1-M5（Next.js / DB / 队列 / 适配器 / Feed 页） | 星子 | ⏳ 待开工，见 `docs/HANDOFF.md` |
-| 15 个信源清单 | Alice | ⏳ **唯一的开工阻塞项** |
+| M1（Next.js / TS / CI） | 星子 | ✅ 已完成 |
+| M2（Drizzle schema / Supabase migration / RLS） | 星子 | ✅ 代码完成；待有容器或远程项目时重放迁移 |
+| M3（Job 队列 / worker 骨架 / 临时区） | 星子 | ✅ 已完成，36 测试全绿 |
+| M4-M5（适配器 / Feed 页） | 星子 | ⏳ 待信源清单后继续 |
+| 15 个信源清单 | Alice | 🟡 整理中 |
 | 15 个一级主题 + 5 正例 5 反例 | RabbitT | ⏳ |
 
 ## 已实现
@@ -29,12 +32,20 @@ src/pipeline/
 ├── tier/               分档打分，四项加权 + 可解释 tier_reason
 └── entity/             人物/公司归一化与自动登记
 prompts/                L2 判定 + 摘要 prompt
+src/db/                 Drizzle 五表 schema + 服务端连接
+src/worker/             SKIP LOCKED 队列 + worker 红线编排 + 临时区生命周期
+supabase/               可重放 migration + 默认封闭的 RLS 测试
 ```
 
 ## 开发
 
 ```bash
 npm install
-npm test          # vitest
+npm run lint      # ESLint
 npm run typecheck # tsc --noEmit
+npm test          # Vitest，当前 36 项
+npm run build     # Next.js production build
 ```
+
+数据库迁移以 `supabase/migrations/` 为事实来源，Drizzle schema 用于应用侧类型与查询。
+本地具备容器运行时后执行 `npm run db:reset`，再执行 `npm run db:test` 验证 schema 与 RLS。

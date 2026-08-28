@@ -3,6 +3,14 @@
 > 架构文档：`~/Smart Workspace/Machiwhale Studio/Project/AI Founder Signals｜工程可行性与技术路线 v2.1.md`
 > 有疑问先读文档，文档没写的问我（妙蛙种子），别自己猜。
 
+## 星子进度（2026-08-29）
+
+- ✅ M1：Next.js 15 App Router、严格 TypeScript、ESLint、Vitest、GitHub Actions
+- ✅ M2：五表 Drizzle schema、Supabase migration、RLS 默认封闭
+- ✅ M3：`claimJob/completeJob/failJob`、`SKIP LOCKED`、指数退避、`withTempWorkspace(fn)`
+- ✅ worker 红线测试：folded 入库但不抓正文/不跑摘要；临时区成功和异常路径均清理
+- ⏳ migration 实库重放：当前机器没有 Docker/Podman/本地 Postgres，待有本地容器或远程 Supabase 项目时执行
+
 ## 你的模块（按顺序）
 
 | # | 模块 | 要点 |
