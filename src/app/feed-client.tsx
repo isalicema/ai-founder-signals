@@ -1,6 +1,13 @@
 'use client';
 
-import { useMemo, useReducer, useState, useTransition, type CSSProperties } from 'react';
+import {
+  useMemo,
+  useReducer,
+  useState,
+  useSyncExternalStore,
+  useTransition,
+  type CSSProperties,
+} from 'react';
 import { applyFeedAction } from './actions';
 import {
   applyLocalFeedAction,
@@ -29,6 +36,24 @@ const mediaMarks: Record<FeedMediaType, string> = {
   video: 'VID',
   podcast: 'AUD',
 };
+
+type FeedSkin = 'editorial' | 'aurora';
+
+const skinStorageKey = 'afs-feed-skin';
+
+function getSkinSnapshot(): FeedSkin {
+  if (typeof document === 'undefined') return 'editorial';
+  return document.documentElement.dataset.skin === 'aurora' ? 'aurora' : 'editorial';
+}
+
+function subscribeToSkin(onStoreChange: () => void) {
+  window.addEventListener('afs-skin-change', onStoreChange);
+  window.addEventListener('storage', onStoreChange);
+  return () => {
+    window.removeEventListener('afs-skin-change', onStoreChange);
+    window.removeEventListener('storage', onStoreChange);
+  };
+}
 
 export function FeedClient({ payload }: { payload: FeedPayload }) {
   const [items, dispatch] = useReducer(applyLocalFeedAction, payload.items);
@@ -62,15 +87,18 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
     <main className="feed-shell">
       <header className="masthead">
         <div className="masthead-rule" aria-hidden="true" />
-        <div className="masthead-topline">
+        <div className="masthead-topline glass">
           <div className="brand-stamp">
-            <span>AFS</span>
+            <span className="stamp">AFS</span>
             <small>05 / DAILY</small>
           </div>
           <p>创始人一手访谈 · 晨间信号台</p>
-          <time dateTime={payload.generatedAt}>
-            {generatedAt.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'short' })}
-          </time>
+          <div className="masthead-tools">
+            <SkinSwitcher />
+            <time dateTime={payload.generatedAt}>
+              {generatedAt.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'short' })}
+            </time>
+          </div>
         </div>
 
         <div className="masthead-main">
@@ -78,14 +106,14 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
             <p className="overline">Machiwhale Intelligence Desk</p>
             <h1>AI Founder<br /><em>Signals</em></h1>
           </div>
-          <div className="briefing-note">
+          <div className="briefing-note glass">
             <span className="briefing-index">今日简报</span>
             <p>先看新面孔与密集发声，再决定哪一场值得带走。</p>
             <small title={payload.notice}>更新 {generatedAt.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })} · {payload.mode === 'demo' ? '演示数据' : '数据库实时'}</small>
           </div>
         </div>
 
-        <dl className="signal-metrics" aria-label="Feed 概览">
+        <dl className="signal-metrics glass" aria-label="Feed 概览">
           <Metric label="全部信号" value={stats.total} />
           <Metric label="尚未读过" value={stats.unread} accent />
           <Metric label="高亮访谈" value={stats.highlights} />
@@ -93,9 +121,9 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
         </dl>
       </header>
 
-      <section className="filter-deck" aria-label="Feed 筛选">
+      <section className="filter-deck glass" aria-label="Feed 筛选">
         <div className="filter-deck-heading">
-          <span className="filter-number">01</span>
+          <span className="filter-number deck-number">01</span>
           <div>
             <strong>缩短信号面</strong>
             <small>{activeFilters ? `已启用 ${activeFilters} 项筛选` : '默认：未读优先 · 最新在前'}</small>
@@ -121,8 +149,8 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
 
       <div className="feed-layout">
         <aside className="reading-rail" aria-label="阅读提示">
-          <div className="rail-block">
-            <span className="rail-index">02</span>
+          <div className="rail-block glass">
+            <span className="rail-index deck-number rail">02</span>
             <strong>扫读顺序</strong>
             <ol>
               <li>事实与角标</li>
@@ -130,12 +158,12 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
               <li>决定动作</li>
             </ol>
           </div>
-          <div className="legend">
+          <div className="legend glass">
             <span><i className="dot unread" />未读</span>
             <span><i className="dot highlight" />高亮</span>
             <span><i className="dot read" />已读</span>
           </div>
-          <p>目标：30 秒扫完今天的新信号。</p>
+          <p className="rail-goal">目标：30 秒扫完今天的新信号。</p>
         </aside>
 
         <section className="signal-stream" aria-labelledby="stream-title">
@@ -162,7 +190,7 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
               ))}
             </div>
           ) : (
-            <div className="empty-state">
+            <div className="empty-state glass">
               <span>∅</span>
               <h3>这组条件下没有信号</h3>
               <p>清除一两个筛选，信号面会重新展开。</p>
@@ -170,7 +198,7 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
             </div>
           )}
 
-          <details className="folded-drawer">
+          <details className="folded-drawer glass">
             <summary>
               <span className="folded-mark" aria-hidden="true">↓</span>
               <span>
@@ -199,11 +227,43 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
       </footer>
 
       <div className={`toast ${notice ? 'is-visible' : ''}`} role="status" aria-live="polite">
-        <span className={isPending ? 'toast-pulse' : ''} aria-hidden="true" />
+        <span className={`toast-dot ${isPending ? 'toast-pulse pulse' : ''}`} aria-hidden="true" />
         {notice}
         {notice && <button type="button" onClick={() => setNotice('')} aria-label="关闭状态提示">×</button>}
       </div>
     </main>
+  );
+}
+
+function SkinSwitcher() {
+  const skin = useSyncExternalStore(subscribeToSkin, getSkinSnapshot, () => 'editorial');
+
+  const selectSkin = (nextSkin: FeedSkin) => {
+    document.documentElement.dataset.skin = nextSkin;
+    try {
+      window.localStorage.setItem(skinStorageKey, nextSkin);
+    } catch {
+      // The selected skin still applies for this page when storage is unavailable.
+    }
+    window.dispatchEvent(new CustomEvent('afs-skin-change', { detail: nextSkin }));
+  };
+
+  return (
+    <div className="skin-switcher" role="group" aria-label="界面皮肤">
+      <span>皮肤</span>
+      <button
+        type="button"
+        aria-label="切换到复古编辑台皮肤"
+        aria-pressed={skin === 'editorial'}
+        onClick={() => selectSkin('editorial')}
+      >复古</button>
+      <button
+        type="button"
+        aria-label="切换到现代极光皮肤"
+        aria-pressed={skin === 'aurora'}
+        onClick={() => selectSkin('aurora')}
+      >极光</button>
+    </div>
   );
 }
 
@@ -232,7 +292,7 @@ function FilterSelect<Value extends string = string>({
   return (
     <label className="filter-control">
       <span>{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value as '' | Value)}>
+      <select className={value ? 'has-value' : ''} value={value} onChange={(event) => onChange(event.target.value as '' | Value)}>
         <option value="">全部</option>
         {options.map((option) => <option value={option} key={option}>{optionLabel?.(option) ?? option}</option>)}
       </select>
@@ -263,7 +323,7 @@ function SignalCard({
       className={`signal-card tone-${item.coverTone} tier-${item.tier} ${item.readAt ? 'is-read' : 'is-unread'}`}
       style={{ '--card-index': index } as CSSProperties}
     >
-      <div className="card-sequence" aria-hidden="true">{String(index + 1).padStart(2, '0')}</div>
+      <div className="card-sequence card-seq" aria-hidden="true">{String(index + 1).padStart(2, '0')}</div>
       <div className="card-cover" aria-hidden="true" style={coverStyle(item)}>
         <span className="cover-format">{mediaMarks[item.mediaType]}</span>
         <strong>{coverMonogram(item)}</strong>
@@ -406,10 +466,10 @@ function coverMonogram(item: FeedItemView): string {
 function coverStyle(item: FeedItemView): CSSProperties | undefined {
   if (!item.coverUrl || !/^https?:\/\//i.test(item.coverUrl)) return undefined;
   return {
-    backgroundImage: `linear-gradient(180deg, rgba(10, 18, 14, 0.08), rgba(10, 18, 14, 0.72)), url(${JSON.stringify(item.coverUrl)})`,
+    '--cover-image': `url(${JSON.stringify(item.coverUrl)})`,
     backgroundPosition: 'center',
     backgroundSize: 'cover',
-  };
+  } as CSSProperties;
 }
 
 function emptySummary(item: FeedItemView): string {

@@ -111,6 +111,49 @@ summary:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
+.masthead-tools {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.masthead-tools time {
+  white-space: nowrap;
+}
+
+.skin-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--line-dark);
+  background: var(--paper-bright);
+}
+
+.skin-switcher > span {
+  padding: 0 5px;
+  color: var(--ink-soft);
+  font-size: 0.56rem;
+  letter-spacing: 0.08em;
+}
+
+.skin-switcher button {
+  min-width: 38px;
+  min-height: 24px;
+  padding: 3px 7px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-size: 0.6rem;
+  font-weight: 800;
+}
+
+.skin-switcher button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper-bright);
+}
+
 .brand-stamp {
   display: flex;
   align-items: baseline;
@@ -548,6 +591,12 @@ summary:focus-visible {
     repeating-linear-gradient(126deg, transparent 0 17px, rgba(255, 255, 255, 0.08) 18px 19px),
     linear-gradient(150deg, var(--cover-a), var(--cover-b));
   color: #fffdf4;
+}
+
+.card-cover[style] {
+  background-image:
+    linear-gradient(180deg, rgba(10, 18, 14, 0.08), rgba(10, 18, 14, 0.72)),
+    var(--cover-image);
 }
 
 .card-cover::after {
@@ -1226,6 +1275,19 @@ summary:focus-visible {
 
   .masthead-topline time {
     font-size: 0.62rem;
+  }
+
+  .masthead-tools {
+    gap: 7px;
+  }
+
+  .skin-switcher > span {
+    display: none;
+  }
+
+  .skin-switcher button {
+    min-width: 34px;
+    padding-inline: 5px;
   }
 
   .masthead-main {
