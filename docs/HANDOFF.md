@@ -155,3 +155,48 @@ npx tsx tools/archiveQueue.ts done <id>   # 回写 archived_at
 
 工作流：Alice 点「深看」（零成本意向标记，不阻塞）→ 稍后在 Claude Code 说
 「处理收藏队列」→ 妙蛙种子读队列逐条跑 collection-manager → 回写。
+
+---
+
+## Worker 主入口已就位（妙蛙种子）
+
+```
+src/worker/
+├── handlers.ts   discover / process 两个任务处理器
+├── persist.ts    entity 自动登记、去重 L2、已见 external_id
+├── run.ts        认领循环 + 分派 + 当日排班
+tools/worker.ts   CLI 入口
+.github/workflows/worker.yml   每天北京 06:00
+```
+
+```bash
+npx tsx tools/worker.ts                # 排当日 discover + 跑到排空
+npx tsx tools/worker.ts --max-jobs 3   # 小步试跑
+npx tsx tools/worker.ts --no-enqueue   # 只消费现有队列
+```
+
+### 链路
+
+```
+enqueueDailyDiscover  每个启用信源一个 discover 任务（key 带日期，当天重复调用不重复排）
+  └─ discover  adapter.discover() → 过滤已见 external_id → 为每条排一个 process 任务
+       └─ process  admit()（判定在抓正文之前）
+            ├─ folded    → 入库，tier=folded，不抓正文、不调摘要
+            ├─ needs_body → 入库，status=needs_body（抓不到正文是降级不是丢失）
+            ├─ duplicate  → simhash 汉明距 ≤3，跳过
+            └─ accepted   → withTempWorkspace → 摘要 → entity 登记 → 分档 → 入库
+```
+
+### 三条已写成测试的不变量
+
+1. **folded 条目仍然入库，但绝不下载正文、不花摘要的钱**
+2. **融资/榜单类标题在 L1 就判负，连 L2 都不调**
+3. **异常只记安全分类码**——`classify()` 对未知异常一律返回 `unclassified_error`，
+   不让异常消息（可能含正文片段）流进数据库
+
+### ⚠️ rescore 任务故意没实现
+
+`dispatch()` 里 rescore 直接抛错。实现前必须先解决**「反馈会被 rescore 洗掉」**：
+`item` 表没有 `user_signal` 列，rescore 从 `tier_score` 重算 tier 会抹掉 Alice
+手动点的 👍👎。要么加回该列并让 rescore 跳过，要么让 rescore 查 `feedback`
+最新信号。**这是我压表时删掉那列留下的坑，别在没定规则前实现 rescore。**

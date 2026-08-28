@@ -10,11 +10,20 @@ export interface TierInput {
   entityStarred: boolean;
 }
 
+/** 与 db/schema.ts 的 TierReason 结构一致——四项都必须在，缺一项就调不了参 */
+export interface TierReason {
+  sourceWeight: number;
+  titleSignal: number;
+  admissionConfidence: number;
+  entityStarred: number;
+  [key: string]: number;
+}
+
 export interface TierResult {
   tier: Tier;
   score: number;
   /** 存进 item.tier_reason —— 调参时要看得见是哪一项在起作用，不做黑盒 */
-  reason: Record<string, number>;
+  reason: TierReason;
 }
 
 export const WEIGHTS = {
@@ -35,7 +44,7 @@ export function normalizeSourceWeight(weight: number): number {
 }
 
 export function scoreTier(input: TierInput): TierResult {
-  const parts = {
+  const parts: TierReason = {
     sourceWeight: WEIGHTS.sourceWeight * clamp01(input.sourceWeight),
     titleSignal: WEIGHTS.titleSignal * clamp01(input.titleSignal),
     admissionConfidence: WEIGHTS.admissionConfidence * clamp01(input.admissionConfidence),

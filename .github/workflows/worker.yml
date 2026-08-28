@@ -1,0 +1,48 @@
+name: worker
+
+on:
+  schedule:
+    # 北京时间每天 06:00 = UTC 22:00（前一天）。
+    # 这个时间也刚好落在 DeepSeek 的平峰计价档（高峰是 UTC 01-04 与 06-10 工作日）。
+    - cron: '0 22 * * *'
+  workflow_dispatch:
+    inputs:
+      max_jobs:
+        description: '本次最多处理多少任务（手动补跑时可调小）'
+        required: false
+        default: '200'
+      no_enqueue:
+        description: '只消费现有队列，不新排 discover'
+        type: boolean
+        default: false
+
+concurrency:
+  # 同一时刻只跑一个 worker。队列本身用 SKIP LOCKED 已能并发安全，
+  # 但串行跑更省事也更好排查。
+  group: afs-worker
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      # YouTube 适配器取字幕要用
+      - name: Install yt-dlp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq yt-dlp
+      - name: Run worker
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          AFS_LLM_PROVIDER: deepseek
+        run: |
+          npx tsx tools/worker.ts \
+            --max-jobs ${{ inputs.max_jobs || 200 }} \
+            --budget-min 20 \
+            ${{ inputs.no_enqueue && '--no-enqueue' || '' }}
