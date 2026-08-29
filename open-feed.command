@@ -12,7 +12,7 @@
 #   nohup "/Users/yangwutu/Projects/ai-founder-signals/open-feed.command" \
 #     >> "/Users/yangwutu/Library/Logs/afs-open.log" 2>&1 &
 cd "$(dirname "$0")" || exit 1
-PORT=3000
+PORT="${AFS_PORT:-8166}"
 GUI="gui/$(id -u)"
 WEB=com.machiwhale.afs.web
 WORKER=com.machiwhale.afs.worker

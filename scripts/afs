@@ -3,6 +3,7 @@
 #   afs status | run | web | logs | open | stop | start
 set -u
 PROJECT="$HOME/Projects/ai-founder-signals"
+PORT="${AFS_PORT:-8166}"
 W=com.machiwhale.afs.worker
 S=com.machiwhale.afs.web
 GUI="gui/$(id -u)"
@@ -25,16 +26,16 @@ case "${1:-status}" in
     #       第 2 点实测踩过，当时误判成启动慢查了很久。
     code=000
     for _ in 1 2 3 4; do
-      code=$(curl -s -o /dev/null -m 4 --noproxy '*' -w '%{http_code}' http://127.0.0.1:3000 2>/dev/null)
+      code=$(curl -s -o /dev/null -m 4 --noproxy '*' -w '%{http_code}' http://127.0.0.1:$PORT 2>/dev/null)
       [[ "$code" == "200" ]] && break
       sleep 3
     done
     if [[ "$code" == "200" ]]; then
-      echo "  ✅ localhost:3000"
+      echo "  ✅ localhost:$PORT"
     elif launchctl print "$GUI/$S" 2>/dev/null | grep -q 'state = running'; then
-      echo "  ⏳ localhost:3000 启动中（进程在跑，冷启动约 30 秒）"
+      echo "  ⏳ localhost:$PORT 启动中（进程在跑，冷启动约 30 秒）"
     else
-      echo "  ❌ localhost:3000 未响应 —— 试 afs web 重启，或看 ~/Library/Logs/afs-web.log"
+      echo "  ❌ localhost:$PORT 未响应 —— 试 afs web 重启，或看 ~/Library/Logs/afs-web.log"
     fi
     echo "── 数据 ──"
     cd "$PROJECT" && npx tsx tools/dbCheck.ts 2>/dev/null | grep -E "信源|待跑|已收录" | sed 's/^/  /'
@@ -59,7 +60,7 @@ case "${1:-status}" in
   build   改完代码后重建网页并重启
   web     只重启网页服务
   logs    跟踪 worker 日志
-  open    打开 localhost:3000
+  open    打开 feed 页
   start   加载两个 launchd 服务
   stop    卸载" ;;
 esac

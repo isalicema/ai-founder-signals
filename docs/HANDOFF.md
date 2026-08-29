@@ -207,7 +207,7 @@ enqueueDailyDiscover  每个启用信源一个 discover 任务（key 带日期�
 
 ```
 scripts/run-worker.sh   每日 worker（launchd 06:00 调起）
-scripts/run-web.sh      feed 网页常驻 localhost:3000
+scripts/run-web.sh      feed 网页常驻 localhost:8166
 scripts/afs             控制台：status / run / build / web / logs / open / start / stop
 ~/Library/LaunchAgents/com.machiwhale.afs.{worker,web}.plist
 ~/Library/Logs/afs-{worker,web}.log

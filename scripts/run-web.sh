@@ -1,5 +1,8 @@
 #!/bin/zsh
-# feed 网页常驻在 localhost:3000。由 launchd KeepAlive 守着。
+# feed 网页常驻。由 launchd KeepAlive 守着。
+#
+# 端口 8166 是刻意选的：3000 是各类脚手架的默认口，同时开几个项目必撞。
+# 单一来源在这里，其它脚本从这儿读（见 open-feed.command / scripts/afs）。
 set -u
 PROJECT="$HOME/Projects/ai-founder-signals"
 # node 三级探测：launchd 的 shell 不加载 ~/.zshrc，nvm.sh 也可能不存在。
@@ -29,5 +32,6 @@ if [[ ! -f .next/BUILD_ID ]]; then
   npm run build || { echo "构建失败，请手工跑 npm run build 查看原因"; exit 0; }
 fi
 
-echo "$(date '+%H:%M:%S') 启动 localhost:3000"
-exec npx next start -p 3000
+PORT="${AFS_PORT:-8166}"
+echo "$(date '+%H:%M:%S') 启动 localhost:$PORT"
+exec npx next start -p "$PORT"

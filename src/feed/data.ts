@@ -1,5 +1,5 @@
 import { desc, eq, gte, sql } from 'drizzle-orm';
-import { createDatabaseConnection } from '../db/client';
+import { sharedDb } from '../db/shared';
 import { entities, items, sources } from '../db/schema';
 import { createDemoFeed } from './demo';
 import type {
@@ -24,7 +24,7 @@ export async function loadFeed(): Promise<FeedPayload> {
     return { ...createDemoFeed(), notice: '缺少 SUPABASE_DB_URL，当前显示演示数据' };
   }
 
-  const connection = createDatabaseConnection({ maxConnections: 1 });
+  const connection = sharedDb();
   try {
     const [rows, entityRows, recentRows] = await Promise.all([
       connection.db
@@ -131,8 +131,6 @@ export async function loadFeed(): Promise<FeedPayload> {
       ...createDemoFeed(),
       notice: '数据库读取失败，当前显示演示数据',
     };
-  } finally {
-    await connection.close();
   }
 }
 

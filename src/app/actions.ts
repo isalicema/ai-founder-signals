@@ -2,7 +2,7 @@
 
 import { and, eq, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
-import { createDatabaseConnection } from '../db/client';
+import { sharedDb } from '../db/shared';
 import { entities, feedback, items } from '../db/schema';
 import type { FeedActionResult, FeedItemAction } from '../feed/types';
 
@@ -18,7 +18,7 @@ export async function applyFeedAction(action: FeedItemAction): Promise<FeedActio
   }
   if (!process.env.SUPABASE_DB_URL) return { ok: false, persisted: false };
 
-  const connection = createDatabaseConnection({ maxConnections: 1 });
+  const connection = sharedDb();
   try {
     if (action.type === 'toggle_entity_star') {
       const condition = action.entityId && UUID.test(action.entityId)
@@ -59,7 +59,5 @@ export async function applyFeedAction(action: FeedItemAction): Promise<FeedActio
     return { ok: true, persisted: true };
   } catch {
     return { ok: false, persisted: false };
-  } finally {
-    await connection.close();
   }
 }
