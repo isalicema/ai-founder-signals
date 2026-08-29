@@ -16,6 +16,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
+import type { SourceConfig } from '../adapters/config.js';
 
 export const itemTier = pgEnum('item_tier', ['highlight', 'feed', 'folded']);
 
@@ -40,13 +41,14 @@ export const sources = pgTable(
     weight: real('weight').notNull().default(1),
     weightLocked: boolean('weight_locked').notNull().default(false),
     purity: real('purity').notNull().default(0.7),
+    config: jsonb('config').$type<SourceConfig>(),
     enabled: boolean('enabled').notNull().default(true),
     lastCheckedAt: timestamp('last_checked_at', { withTimezone: true }),
     consecutiveFailures: integer('consecutive_failures').notNull().default(0),
   },
   (table) => [
     uniqueIndex('source_url_unique').on(table.url),
-    check('source_ingest_method_check', sql`${table.ingestMethod} in ('rss', 'youtube', 'podcast', 'html')`),
+    check('source_ingest_method_check', sql`${table.ingestMethod} in ('rss', 'youtube', 'podcast', 'html', 'json_api')`),
     check('source_fetch_mode_check', sql`${table.fetchMode} in ('full', 'discover_only')`),
     check('source_weight_check', sql`${table.weight} between 0.2 and 2.0`),
     check('source_purity_check', sql`${table.purity} between 0 and 1`),

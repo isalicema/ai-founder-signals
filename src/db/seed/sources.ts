@@ -24,8 +24,18 @@ export const SEED_SOURCES: NewSource[] = [
   },
   {
     name: 'Founder Park（智源社区镜像）', url: 'https://hub.baai.ac.cn/users/74219',
-    country: 'CN', language: 'zh', ingestMethod: 'html', fetchMode: 'discover_only', purity: 0.8,
-    enabled: false,
+    country: 'CN', language: 'zh', ingestMethod: 'json_api', fetchMode: 'full', purity: 0.8,
+    config: {
+      endpoint: 'https://hub-api.baai.ac.cn/api/v1/stories/user',
+      method: 'POST',
+      headers: { Referer: 'https://hub.baai.ac.cn/', Origin: 'https://hub.baai.ac.cn' },
+      body: { page: 1, catalogName: 'stories', id: '74219', sort: 'new' },
+      itemsPath: 'data',
+      map: {
+        externalId: 'id', title: 'title', snippet: 'summary', publishedAt: 'created_at',
+        coverUrl: 'cover_url', urlTemplate: 'https://hub.baai.ac.cn/view/{externalId}',
+      },
+    },
     // ⚠️ 页面 JS 渲染，curl 拿不到文章链接。
     // ✅ 但已找到无认证的 JSON 接口（POST hub-api.baai.ac.cn/api/v1/stories/user），
     //    实测 6 条含标题/摘要/时间/封面。等 JsonApiAdapter 落地即可恢复，
@@ -47,16 +57,40 @@ export const SEED_SOURCES: NewSource[] = [
   {
     name: '暗涌 Waveline（腾讯新闻镜像）',
     url: 'https://news.qq.com/omn/author/8QIf3n9a7oYauzjc5QE%3D',
-    country: 'CN', language: 'zh', ingestMethod: 'html', fetchMode: 'discover_only', purity: 0.6,
-    enabled: false,
+    country: 'CN', language: 'zh', ingestMethod: 'json_api', fetchMode: 'full', purity: 0.6,
+    config: {
+      endpoint: 'https://i.news.qq.com/getSubNewsMixedList', method: 'GET',
+      headers: { Referer: 'https://news.qq.com/' },
+      query: {
+        offset_info: '', tabId: 'om_index', caller: '1', from_scene: '103',
+        guestSuid: '8QIf3n9a7oYauzjc5QE=',
+      },
+      itemsPath: 'newslist',
+      map: {
+        externalId: 'id', title: 'title', snippet: 'abstract', publishedAt: 'time',
+        coverUrl: 'thumbnails.0', url: 'url',
+      },
+    },
     // ✅ 已找到无认证接口 GET i.news.qq.com/getSubNewsMixedList，实测 20 条。
     //    等 JsonApiAdapter 恢复。见 docs/SPEC-JsonApiAdapter.md
   },
   {
     name: 'Z Potentials（腾讯新闻镜像）',
     url: 'https://news.qq.com/omn/author/8QIf3nxd5YwYvz%2Fc5wM%3D',
-    country: 'CN', language: 'zh', ingestMethod: 'html', fetchMode: 'discover_only', purity: 0.5,
-    enabled: false,
+    country: 'CN', language: 'zh', ingestMethod: 'json_api', fetchMode: 'full', purity: 0.5,
+    config: {
+      endpoint: 'https://i.news.qq.com/getSubNewsMixedList', method: 'GET',
+      headers: { Referer: 'https://news.qq.com/' },
+      query: {
+        offset_info: '', tabId: 'om_index', caller: '1', from_scene: '103',
+        guestSuid: '8QIf3nxd5YwYvz/c5wM=',
+      },
+      itemsPath: 'newslist',
+      map: {
+        externalId: 'id', title: 'title', snippet: 'abstract', publishedAt: 'time',
+        coverUrl: 'thumbnails.0', url: 'url',
+      },
+    },
     // ✅ 同上，同一接口换 guestSuid，实测 20 条。等 JsonApiAdapter 恢复。
   },
   {

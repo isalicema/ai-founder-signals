@@ -6,6 +6,8 @@ export type AdapterErrorCode =
   | 'response_too_large'
   | 'invalid_feed'
   | 'feed_not_found'
+  | 'invalid_source_config'
+  | 'invalid_api_response'
   | 'article_body_missing'
   | 'transcript_unavailable'
   | 'youtube_no_subtitles'

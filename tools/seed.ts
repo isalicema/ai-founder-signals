@@ -11,15 +11,15 @@ import { SEED_SOURCES } from '../src/db/seed/sources.js';
 const quote = (v: unknown) =>
   v === null || v === undefined ? 'null'
   : typeof v === 'boolean' || typeof v === 'number' ? String(v)
-  : `'${String(v).replace(/'/g, "''")}'`;
+  : `'${(typeof v === 'object' ? JSON.stringify(v) : String(v)).replace(/'/g, "''")}'`;
 
 const statements = SEED_SOURCES.map((s) => `insert into public.source
-  (name, url, country, language, ingest_method, fetch_mode, purity, enabled)
-values (${[s.name, s.url, s.country, s.language, s.ingestMethod, s.fetchMode, s.purity, s.enabled ?? true].map(quote).join(', ')})
+  (name, url, country, language, ingest_method, fetch_mode, purity, config, enabled)
+values (${[s.name, s.url, s.country, s.language, s.ingestMethod, s.fetchMode, s.purity, s.config, s.enabled ?? true].map(quote).join(', ')})
 on conflict (url) do update set
   name = excluded.name, country = excluded.country, language = excluded.language,
   ingest_method = excluded.ingest_method, fetch_mode = excluded.fetch_mode,
-  purity = excluded.purity, enabled = excluded.enabled;`);
+  purity = excluded.purity, config = excluded.config, enabled = excluded.enabled;`);
 
 if (process.argv.includes('--sql')) {
   console.log(statements.join('\n'));

@@ -7,6 +7,9 @@ export interface FetchTextOptions {
   timeoutMs?: number;
   maxBytes?: number;
   accept?: string;
+  method?: 'GET' | 'POST';
+  headers?: Record<string, string>;
+  body?: string;
 }
 
 export interface FetchedText {
@@ -27,15 +30,22 @@ export async function fetchTextResource(
   const timeout = setTimeout(() => controller.abort(), options.timeoutMs ?? DEFAULT_TIMEOUT_MS);
 
   try {
+    const headers = new Headers(options.headers);
+    if (!headers.has('accept')) {
+      headers.set('accept', options.accept ?? 'text/html,application/xml,application/rss+xml,application/atom+xml;q=0.9,*/*;q=0.5');
+    }
+    headers.set('user-agent', 'AI-Founder-Signals/0.1 (+https://github.com/machiwhale-studio)');
     const response = await (options.fetcher ?? fetch)(url, {
+      method: options.method ?? 'GET',
+      body: options.body,
       redirect: 'follow',
       signal: controller.signal,
-      headers: {
-        accept: options.accept ?? 'text/html,application/xml,application/rss+xml,application/atom+xml;q=0.9,*/*;q=0.5',
-        'user-agent': 'AI-Founder-Signals/0.1 (+https://github.com/machiwhale-studio)',
-      },
+      headers,
     });
-    if (!response.ok) throw new AdapterError('fetch_failed', { retryable: response.status >= 500 });
+    if (!response.ok) {
+      const retryable = response.status === 408 || response.status === 425 || response.status === 429 || response.status >= 500;
+      throw new AdapterError('fetch_failed', { retryable });
+    }
     assertPublicHttpUrl(response.url || url);
 
     const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;

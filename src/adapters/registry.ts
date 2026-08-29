@@ -2,6 +2,7 @@ import type { AdapterSource, IngestMethod, SourceAdapter } from './types.js';
 import { AdapterError } from './errors.js';
 import { RssAdapter, type RssAdapterOptions } from './rss.js';
 import { YouTubeAdapter, type YouTubeAdapterOptions } from './youtube.js';
+import { JsonApiAdapter, type JsonApiAdapterOptions } from './jsonApi.js';
 
 export class AdapterRegistry {
   readonly #adapters = new Map<IngestMethod, SourceAdapter>();
@@ -27,11 +28,13 @@ export class AdapterRegistry {
 export interface DefaultAdapterOptions {
   rss?: RssAdapterOptions;
   youtube?: YouTubeAdapterOptions;
+  jsonApi?: JsonApiAdapterOptions;
 }
 
 export function createDefaultAdapterRegistry(options: DefaultAdapterOptions = {}): AdapterRegistry {
   return new AdapterRegistry([
     new RssAdapter(options.rss),
     new YouTubeAdapter(options.youtube),
+    new JsonApiAdapter(options.jsonApi),
   ]);
 }

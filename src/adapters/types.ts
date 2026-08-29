@@ -1,12 +1,13 @@
 import type { Source } from '../db/schema.js';
+import type { SourceConfig } from './config.js';
 
-export type IngestMethod = 'rss' | 'youtube' | 'podcast' | 'html';
+export type IngestMethod = 'rss' | 'youtube' | 'podcast' | 'html' | 'json_api';
 export type MediaType = 'article' | 'video' | 'podcast';
 
 export type AdapterSource = Pick<
   Source,
   'id' | 'name' | 'url' | 'language' | 'ingestMethod' | 'fetchMode'
->;
+> & { config?: SourceConfig | null };
 
 export interface DiscoveredItem {
   /** Stable source-scoped id: RSS guid, Atom id, or YouTube video id. */

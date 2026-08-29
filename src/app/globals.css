@@ -1783,3 +1783,49 @@ summary:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── 加载骨架（src/app/loading.tsx）──
+   只用已有的配色变量，不引入新的视觉语言——UI 方向另有实验，这里只求
+   「页面立刻出现、看得出在加载」。 */
+.skeleton-note {
+  margin-top: 1.5rem;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  opacity: 0.6;
+}
+.skeleton-stream {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 2rem 2.5rem 4rem;
+  display: grid;
+  gap: 1.25rem;
+}
+.skeleton-card {
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  opacity: 0.18;
+  padding: 1.5rem;
+  display: grid;
+  gap: 0.85rem;
+}
+.skeleton-line,
+.skeleton-block {
+  background: currentColor;
+  border-radius: 2px;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+.skeleton-line { height: 0.85rem; }
+.skeleton-line--badge { width: 8rem; height: 0.7rem; }
+.skeleton-line--title { width: 72%; height: 1.4rem; }
+.skeleton-line--meta { width: 45%; }
+.skeleton-block { height: 4.5rem; margin-top: 0.4rem; }
+.skeleton-card:nth-child(2) { animation-delay: 0.15s; opacity: 0.13; }
+.skeleton-card:nth-child(3) { opacity: 0.09; }
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.35; }
+  50%      { opacity: 0.75; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-line, .skeleton-block { animation: none; }
+}
