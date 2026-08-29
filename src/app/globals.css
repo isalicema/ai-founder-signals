@@ -1961,7 +1961,7 @@ summary:focus-visible {
   --cover-b: #87978c;
   display: grid;
   min-width: 0;
-  grid-template-columns: 72px minmax(0, 1fr);
+  grid-template-columns: clamp(92px, 11vw, 108px) minmax(0, 1fr);
   overflow: hidden;
   border: 1px solid var(--line-dark);
   background: var(--paper-bright);
@@ -2033,7 +2033,7 @@ summary:focus-visible {
 .clip-cover strong {
   align-self: center;
   font-family: var(--serif);
-  font-size: 1.75rem;
+  font-size: 2.05rem;
   font-weight: 500;
   letter-spacing: -0.09em;
 }
@@ -2234,9 +2234,17 @@ summary:focus-visible {
     padding: 8px;
   }
 
-  .conversation-clip { grid-template-columns: 48px minmax(0, 1fr); }
-  .clip-cover { padding: 9px 6px; }
-  .clip-cover strong { font-size: 1.25rem; }
+  .conversation-clip { grid-template-columns: 1fr; }
+
+  .clip-cover {
+    min-height: 82px;
+    padding: 10px 12px 9px;
+  }
+
+  .clip-cover strong {
+    align-self: flex-end;
+    font-size: 2.15rem;
+  }
   .clip-body { padding: 10px 10px 9px; }
   .clip-title h4 { font-size: 1rem; }
   .clip-metadata { display: block; }

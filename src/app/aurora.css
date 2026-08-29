@@ -1619,7 +1619,7 @@ html[data-skin="aurora"] .clip-list {
 }
 
 html[data-skin="aurora"] .conversation-clip {
-  grid-template-columns: 68px minmax(0, 1fr);
+  grid-template-columns: clamp(88px, 9vw, 100px) minmax(0, 1fr);
   border: 1px solid var(--glass-line);
   border-radius: 15px;
   background: rgba(255, 255, 255, 0.68);
@@ -1778,16 +1778,21 @@ html[data-skin="aurora"] .clip-actions > .clip-icon-action {
   }
 
   html[data-skin="aurora"] .conversation-clip {
-    grid-template-columns: 48px minmax(0, 1fr);
+    grid-template-columns: 1fr;
   }
 
   html[data-skin="aurora"] .clip-cover {
     margin: 6px;
-    min-height: calc(100% - 12px);
-    padding: 7px 5px;
+    min-height: 76px;
+    padding: 9px 10px;
   }
 
-  html[data-skin="aurora"] .clip-body { padding-left: 4px; }
+  html[data-skin="aurora"] .clip-cover strong {
+    align-self: flex-end;
+    font-size: 2rem;
+  }
+
+  html[data-skin="aurora"] .clip-body { padding: 5px 10px 10px; }
 
   html[data-skin="aurora"] .clip-summary {
     grid-template-columns: 1fr;
