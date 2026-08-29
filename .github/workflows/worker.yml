@@ -33,16 +33,34 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
-      # YouTube 适配器取字幕要用
+      # YouTube 适配器取字幕要用。
+      # ⚠️ 不要用 apt 里的 yt-dlp——发行版打包的版本通常落后好几个月，
+      #    而 YouTube 页面结构常变，旧版会静默取不到字幕。用官方发布的二进制。
       - name: Install yt-dlp
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq yt-dlp
+        run: |
+          sudo curl -sSL -o /usr/local/bin/yt-dlp \
+            https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux
+          sudo chmod +x /usr/local/bin/yt-dlp
+          yt-dlp --version
       - name: Run worker
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           AFS_LLM_PROVIDER: deepseek
         run: |
+          set -o pipefail
           npx tsx tools/worker.ts \
             --max-jobs ${{ inputs.max_jobs || 200 }} \
             --budget-min 20 \
-            ${{ inputs.no_enqueue && '--no-enqueue' || '' }}
+            ${{ inputs.no_enqueue && '--no-enqueue' || '' }} | tee /tmp/worker.log
+
+      # 把结果写进 Actions 的运行摘要，不用点进日志翻
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo '### AI Founder Signals · worker'
+            echo '```'
+            tail -20 /tmp/worker.log 2>/dev/null || echo '(没有输出，多半是前置步骤就失败了)'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
