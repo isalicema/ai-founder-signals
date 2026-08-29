@@ -36,7 +36,7 @@ export function createContext(db: AfsDatabase, sql: Sql, ledger: UsageLedger): H
 export async function handleDiscover(
   ctx: HandlerContext,
   payload: { sourceId: string },
-): Promise<{ found: number; enqueued: number }> {
+): Promise<{ found: number; enqueued: number; tooOld: number }> {
   const [source] = await ctx.db.select().from(sources).where(eq(sources.id, payload.sourceId));
   if (!source) throw new AdapterError('unsupported_ingest_method', { retryable: false });
 
@@ -54,8 +54,16 @@ export async function handleDiscover(
     throw error;
   }
 
-  const seen = await existingExternalIds(ctx.db, source.id, found.map((i) => i.externalId));
-  const fresh = found.filter((i) => !seen.has(i.externalId));
+  // ⚠️ 信源固定返回「最近 15 条」，不管这 15 条跨多久。实测首轮 165 条里
+  //    62 条超过 30 天、最早回溯到四个月前——全量处理既花钱，又把
+  //    「今天有什么新东西」这个产品前提淹掉。
+  //    没有日期的条目放行（HtmlAdapter 拿不到发布时间，见其 spec §2.4）。
+  const cutoff = Date.now() - discoveryMaxAgeDays() * 24 * 60 * 60 * 1000;
+  const recent = found.filter((i) => !i.publishedAt || i.publishedAt.getTime() >= cutoff);
+  const tooOld = found.length - recent.length;
+
+  const seen = await existingExternalIds(ctx.db, source.id, recent.map((i) => i.externalId));
+  const fresh = recent.filter((i) => !seen.has(i.externalId));
 
   for (const item of fresh) {
     await ctx.sql`
@@ -64,7 +72,13 @@ export async function handleDiscover(
       on conflict (idempotency_key) do nothing
     `;
   }
-  return { found: found.length, enqueued: fresh.length };
+  return { found: found.length, enqueued: fresh.length, tooOld };
+}
+
+/** 默认只看最近 7 天。历史内容不是这个产品的用途——要回溯用检索，不用 feed。 */
+export function discoveryMaxAgeDays(): number {
+  const raw = Number(process.env.AFS_DISCOVERY_MAX_AGE_DAYS);
+  return Number.isFinite(raw) && raw > 0 ? raw : 7;
 }
 
 /* ────────────────────────── process ────────────────────────── */

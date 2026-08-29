@@ -53,3 +53,15 @@ describe('管线错误码可定位（实测回归）', () => {
     expect(classify(new Error('创始人说我们花了一年'))).toBe('unclassified_error');
   });
 });
+
+describe('发现期截止（实测回归）', () => {
+  it('默认 7 天，env 可覆盖', async () => {
+    const { discoveryMaxAgeDays } = await import('../src/worker/handlers.js');
+    expect(discoveryMaxAgeDays()).toBe(7);
+    vi.stubEnv('AFS_DISCOVERY_MAX_AGE_DAYS', '30');
+    expect(discoveryMaxAgeDays()).toBe(30);
+    vi.stubEnv('AFS_DISCOVERY_MAX_AGE_DAYS', '不是数字');
+    expect(discoveryMaxAgeDays()).toBe(7);   // 脏值回落默认，不崩
+    vi.unstubAllEnvs();
+  });
+});

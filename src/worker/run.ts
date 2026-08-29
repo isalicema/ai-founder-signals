@@ -113,7 +113,8 @@ export async function runWorker(
 async function dispatch(ctx: HandlerContext, kind: string, payload: unknown): Promise<string> {
   if (kind === 'discover') {
     const result = await handleDiscover(ctx, payload as { sourceId: string });
-    return `discover:+${result.enqueued}/${result.found}`;
+    const aged = result.tooOld > 0 ? `,过期${result.tooOld}` : '';
+    return `discover:+${result.enqueued}/${result.found}${aged}`;
   }
   if (kind === 'process') {
     const result = await handleProcess(ctx, payload as never);
