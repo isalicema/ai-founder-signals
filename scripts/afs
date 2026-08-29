@@ -19,11 +19,13 @@ case "${1:-status}" in
       fi
     done
     echo "── 网页 ──"
-    # ⚠️ 重试几次再判定。next start 冷启动要 20-30 秒，
-    #    单次探测撞上启动窗口会显示成「未响应」，看着像坏了。
+    # ⚠️ 两件事都会造成假的「未响应」：
+    #    1) next start 冷启动要 20-30 秒 → 重试几次
+    #    2) 开着 Clash 时 HTTP_PROXY 会让 curl 把 localhost 也走代理 → --noproxy
+    #       第 2 点实测踩过，当时误判成启动慢查了很久。
     code=000
     for _ in 1 2 3 4; do
-      code=$(curl -s -o /dev/null -m 4 -w '%{http_code}' http://localhost:3000 2>/dev/null)
+      code=$(curl -s -o /dev/null -m 4 --noproxy '*' -w '%{http_code}' http://127.0.0.1:3000 2>/dev/null)
       [[ "$code" == "200" ]] && break
       sleep 3
     done

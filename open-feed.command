@@ -7,6 +7,10 @@
 #   3. 如果今天还没抓过，后台补跑一次 worker——Mac 昨晚关机时 06:00 那趟就错过了
 #
 # 形式参考 kimi work/api-usage-board/serve.command。
+#
+# 做成快捷指令时用这一行（nohup + & 不可省，否则快捷指令会干等健康检查）：
+#   nohup "/Users/yangwutu/Projects/ai-founder-signals/open-feed.command" \
+#     >> "/Users/yangwutu/Library/Logs/afs-open.log" 2>&1 &
 cd "$(dirname "$0")" || exit 1
 PORT=3000
 GUI="gui/$(id -u)"
@@ -24,7 +28,10 @@ if [ -z "$NODE" ]; then
 fi
 [ -n "$NODE" ] && export PATH="$(dirname "$NODE"):/usr/local/bin:/opt/homebrew/bin:$PATH"
 
-alive() { /usr/bin/curl -sf -m 3 -o /dev/null "http://127.0.0.1:$PORT"; }
+# ⚠️ --noproxy 不可省：Alice 开着 Clash 时环境里有 HTTP_PROXY=127.0.0.1:7897，
+#    curl 会把对 localhost 的健康检查也走代理，结果永远探测失败——
+#    服务明明是好的。实测踩过，当时误判成「启动慢」查了很久。
+alive() { /usr/bin/curl -sf -m 3 --noproxy '*' -o /dev/null "http://127.0.0.1:$PORT"; }
 
 # ── 1. 确保服务在跑 ──
 if ! alive; then
@@ -44,8 +51,12 @@ if ! alive; then
   echo ""
   echo "❌ 90 秒内没起来。看日志：tail -30 ~/Library/Logs/afs-web.log"
   echo "   常见原因：没有生产构建 → 跑 afs build"
-  echo "按任意键退出。"
-  read -n 1
+  # ⚠️ 只在真有终端时才等按键。做成快捷指令 / nohup 运行时没有 TTY，
+  #    无条件 read 会永远挂着——那种卡死最难查，因为看不到任何输出。
+  if [ -t 0 ]; then
+    echo "按任意键退出。"
+    read -n 1
+  fi
   exit 1
 fi
 
