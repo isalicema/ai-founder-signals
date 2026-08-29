@@ -90,3 +90,64 @@ export function applyLocalFeedAction(items: FeedItemView[], action: FeedItemActi
     }
   });
 }
+
+/* ─────────────── 同一场对话的切片折叠 ─────────────── */
+
+/** 与 data.ts 的密集受访角标用同一个判据，避免两处规则打架 */
+export const SAME_CONVERSATION_MS = 3 * 24 * 60 * 60 * 1000;
+
+export interface ConversationGroup {
+  /** 代表条目：段落最长的那条，通常信息最全 */
+  lead: FeedItemView;
+  /** 其余切片，展开才显示。单条内容时为空数组 */
+  rest: FeedItemView[];
+}
+
+function timeOf(item: FeedItemView): number {
+  return Date.parse(item.publishedAt ?? item.firstSeenAt);
+}
+
+/**
+ * 把同一场对话的切片折成一组。
+ *
+ * 由来：Lex Fridman 把一场 DHH 访谈切成 5 条视频分两天发布，feed 里就占了
+ * 5 张卡、5 段高度重叠的摘要。在一个「30 秒扫完」的界面里这是实打实的噪音。
+ *
+ * 判据：同信源 + 至少共享一个人物 + 发布时间相差 3 天内。
+ * 切片的字幕内容各不相同，simhash 去重从原理上挡不住，只能在这一层聚类。
+ *
+ * ⚠️ 只在**确实有 2 条以上**时才折叠。单条内容照常显示，不引入多余层级。
+ */
+export function groupConversations(items: FeedItemView[]): ConversationGroup[] {
+  const groups: ConversationGroup[] = [];
+  const buckets: FeedItemView[][] = [];
+
+  for (const item of items) {
+    const bucket = buckets.find((b) => b.some((other) =>
+      other.sourceName === item.sourceName
+      && Math.abs(timeOf(other) - timeOf(item)) <= SAME_CONVERSATION_MS
+      && other.persons.some((p) => item.persons.includes(p))));
+    if (bucket) bucket.push(item);
+    else buckets.push([item]);
+  }
+
+  for (const bucket of buckets) {
+    if (bucket.length === 1) {
+      groups.push({ lead: bucket[0]!, rest: [] });
+      continue;
+    }
+    // 代表选段落最长的那条：切片里内容最全的一段最能说明这场对话讲了什么
+    const sorted = [...bucket].sort((a, b) =>
+      (b.contentChars ?? 0) - (a.contentChars ?? 0) || timeOf(a) - timeOf(b));
+    groups.push({ lead: sorted[0]!, rest: sorted.slice(1) });
+  }
+
+  // 保持原有排序：按代表条目在原列表中的位置
+  const order = new Map(items.map((item, i) => [item.id, i]));
+  return groups.sort((a, b) => (order.get(a.lead.id) ?? 0) - (order.get(b.lead.id) ?? 0));
+}
+
+/** 组内任一条未读，整组就算未读 */
+export function groupUnread(group: ConversationGroup): boolean {
+  return !group.lead.readAt || group.rest.some((item) => !item.readAt);
+}

@@ -153,7 +153,7 @@ export async function handleProcess(
   let analysis;
   try {
     analysis = await withTempWorkspace((workspace) =>
-      analyzeInWorkspace(adapter, item, source.name, workspace, ctx.ledger));
+      analyzeInWorkspace(adapter, item, source, workspace, ctx.ledger));
   } catch (error) {
     // 抓不到正文是支持的降级，不是数据丢失——仍然入库，标注状态（§5.1）
     if (error instanceof FetchBlockedError) {

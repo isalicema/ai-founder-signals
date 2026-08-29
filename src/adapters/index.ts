@@ -7,5 +7,6 @@ export * from './rss.js';
 export * from './youtube.js';
 export * from './config.js';
 export * from './jsonApi.js';
+export * from './htmlAdapter.js';
 export * from './registry.js';
 export * from './embeddedNotes.js';

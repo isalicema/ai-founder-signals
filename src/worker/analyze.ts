@@ -1,4 +1,4 @@
-import type { SourceAdapter, DiscoveredItem } from '../adapters/types.js';
+import type { SourceAdapter, DiscoveredItem, AdapterSource } from '../adapters/types.js';
 import { summarizeItem } from '../llm/summarize.js';
 import type { UsageLedger } from '../llm/provider.js';
 import type { PersistableAnalysis } from './processItem.js';
@@ -14,18 +14,18 @@ import { createHash } from 'node:crypto';
 export async function analyzeInWorkspace(
   adapter: SourceAdapter,
   item: DiscoveredItem,
-  sourceName: string,
+  source: Pick<AdapterSource, 'name' | 'fetchMode'>,
   workspace: string,
   ledger?: UsageLedger,
 ): Promise<PersistableAnalysis> {
-  const content = await adapter.fetch(item, { workspace });
+  const content = await adapter.fetch(item, { workspace, source });
 
   // 指纹在 raw 还在内存里时算好——「指纹留下，正文丢掉」（架构文档 v1.2 §0.1）
   const contentChars = content.rawText.length;
   const simhash = cheapSimhash(content.rawText);
 
   const analysis = await summarizeItem(
-    { title: item.title, sourceName, body: content.rawText, provenance: content.provenance },
+    { title: item.title, sourceName: source.name, body: content.rawText, provenance: content.provenance },
     ledger,
   );
 

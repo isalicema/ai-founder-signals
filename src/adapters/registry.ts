@@ -3,6 +3,7 @@ import { AdapterError } from './errors.js';
 import { RssAdapter, type RssAdapterOptions } from './rss.js';
 import { YouTubeAdapter, type YouTubeAdapterOptions } from './youtube.js';
 import { JsonApiAdapter, type JsonApiAdapterOptions } from './jsonApi.js';
+import { HtmlAdapter, type HtmlAdapterOptions } from './htmlAdapter.js';
 
 export class AdapterRegistry {
   readonly #adapters = new Map<IngestMethod, SourceAdapter>();
@@ -29,6 +30,7 @@ export interface DefaultAdapterOptions {
   rss?: RssAdapterOptions;
   youtube?: YouTubeAdapterOptions;
   jsonApi?: JsonApiAdapterOptions;
+  html?: HtmlAdapterOptions;
 }
 
 export function createDefaultAdapterRegistry(options: DefaultAdapterOptions = {}): AdapterRegistry {
@@ -36,5 +38,6 @@ export function createDefaultAdapterRegistry(options: DefaultAdapterOptions = {}
     new RssAdapter(options.rss),
     new YouTubeAdapter(options.youtube),
     new JsonApiAdapter(options.jsonApi),
+    new HtmlAdapter(options.html),
   ]);
 }

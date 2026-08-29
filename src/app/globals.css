@@ -1829,3 +1829,32 @@ summary:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .skeleton-line, .skeleton-block { animation: none; }
 }
+
+/* ── 同一场对话的切片折叠（src/feed/model.ts groupConversations）──
+   Lex 这类频道会把一场访谈切成 5 条分两天发。折起来，展开才看各段。 */
+.conversation { display: grid; gap: 0; }
+.clip-group {
+  margin: -0.35rem 0 0 2.75rem;
+  border-left: 1px solid currentColor;
+  padding-left: 1rem;
+  opacity: 0.85;
+}
+.clip-group > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  opacity: 0.65;
+}
+.clip-group > summary::-webkit-details-marker { display: none; }
+.clip-group > summary:hover { opacity: 1; }
+.clip-count::before { content: '⤷ '; }
+.clip-open, .clip-close { text-decoration: underline; text-underline-offset: 3px; }
+.clip-group[open] .clip-open,
+.clip-group:not([open]) .clip-close { display: none; }
+.clip-list { display: grid; gap: 1rem; padding: 0.5rem 0 1.25rem; }
+.clip-list .signal-card { transform: scale(0.985); transform-origin: left top; }

@@ -37,6 +37,8 @@ export interface EphemeralContent {
 export interface AdapterFetchContext {
   /** Must be a directory created and owned by withTempWorkspace(). */
   workspace: string;
+  /** Lets adapters enforce source-level body-fetch policy before any request. */
+  source?: Pick<AdapterSource, 'fetchMode'>;
 }
 
 export interface SourceAdapter {

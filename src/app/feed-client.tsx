@@ -15,8 +15,7 @@ import {
   EMPTY_FILTERS,
   feedOptions,
   feedStats,
-  splitFeed,
-} from '../feed/model';
+  splitFeed, groupConversations } from '../feed/model';
 import type {
   FeedFilters,
   FeedItemAction,
@@ -66,6 +65,7 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
   const stats = useMemo(() => feedStats(items), [items]);
   const { visible, folded } = useMemo(() => splitFeed(items, filters), [items, filters]);
   const activeFilters = Object.values(filters).filter(Boolean).length;
+  const groups = useMemo(() => groupConversations(visible), [visible]);
   const scopedItems = useMemo(() => [...visible, ...folded], [visible, folded]);
   const scopedUnreadIds = useMemo(
     () => scopedItems.filter((item) => !item.readAt).map((item) => item.id),
@@ -233,7 +233,9 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
               <h2 id="stream-title">值得先看的</h2>
             </div>
             <div className="stream-tools">
-              <span className="result-count">{visible.length.toString().padStart(2, '0')} 条</span>
+              {/* 数「场」不数「条」——切片折叠后，这里必须和实际渲染的卡片数一致，
+                  否则会出现「说 9 条、只看到 5 张卡」的错位 */}
+              <span className="result-count">{groups.length.toString().padStart(2, '0')} 场</span>
               <button
                 className="mark-read-button"
                 type="button"
@@ -250,16 +252,40 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
 
           {visible.length > 0 ? (
             <div className="cards">
-              {visible.map((item, index) => (
-                <SignalCard
-                  item={item}
-                  index={index}
-                  key={item.id}
-                  onTag={(tag) => updateFilter('tag', tag)}
-                  onAction={act}
-                  actionAt={actionAt}
-                  pending={isPending}
-                />
+              {groups.map((group, index) => (
+                <div className="conversation" key={group.lead.id}>
+                  <SignalCard
+                    item={group.lead}
+                    index={index}
+                    onTag={(tag) => updateFilter('tag', tag)}
+                    onAction={act}
+                    actionAt={actionAt}
+                    pending={isPending}
+                  />
+                  {group.rest.length > 0 && (
+                    // 同一场对话被信源切成了多段。折起来，展开才看各段。
+                    <details className="clip-group">
+                      <summary>
+                        <span className="clip-count">同一场对话 · 另有 {group.rest.length} 段</span>
+                        <span className="clip-open">展开</span>
+                        <span className="clip-close">收起</span>
+                      </summary>
+                      <div className="clip-list">
+                        {group.rest.map((clip) => (
+                          <SignalCard
+                            item={clip}
+                            index={-1}
+                            key={clip.id}
+                            onTag={(tag) => updateFilter('tag', tag)}
+                            onAction={act}
+                            actionAt={actionAt}
+                            pending={isPending}
+                          />
+                        ))}
+                      </div>
+                    </details>
+                  )}
+                </div>
               ))}
             </div>
           ) : (

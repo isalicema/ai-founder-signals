@@ -19,6 +19,7 @@ describe('AdapterRegistry', () => {
       .toBe(registry.forSource(source('youtube', 'Completely different name')));
     expect(registry.forSource(source('podcast', 'Any podcast')).kinds).toContain('rss');
     expect(registry.forSource(source('json_api', 'Any configured API')).kinds).toContain('json_api');
+    expect(registry.forSource(source('html', 'Any HTML publication')).kinds).toContain('html');
   });
 
   it('keeps unsupported HTML sources explicit until their adapter is registered', () => {
