@@ -19,7 +19,21 @@ case "${1:-status}" in
       fi
     done
     echo "── 网页 ──"
-    curl -s -o /dev/null -m 3 -w "  localhost:3000 → HTTP %{http_code}\n" http://localhost:3000 || echo "  localhost:3000 → 未响应"
+    # ⚠️ 重试几次再判定。next start 冷启动要 20-30 秒，
+    #    单次探测撞上启动窗口会显示成「未响应」，看着像坏了。
+    code=000
+    for _ in 1 2 3 4; do
+      code=$(curl -s -o /dev/null -m 4 -w '%{http_code}' http://localhost:3000 2>/dev/null)
+      [[ "$code" == "200" ]] && break
+      sleep 3
+    done
+    if [[ "$code" == "200" ]]; then
+      echo "  ✅ localhost:3000"
+    elif launchctl print "$GUI/$S" 2>/dev/null | grep -q 'state = running'; then
+      echo "  ⏳ localhost:3000 启动中（进程在跑，冷启动约 30 秒）"
+    else
+      echo "  ❌ localhost:3000 未响应 —— 试 afs web 重启，或看 ~/Library/Logs/afs-web.log"
+    fi
     echo "── 数据 ──"
     cd "$PROJECT" && npx tsx tools/dbCheck.ts 2>/dev/null | grep -E "信源|待跑|已收录" | sed 's/^/  /'
     ;;
