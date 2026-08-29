@@ -41,7 +41,7 @@ case "${1:-status}" in
   build) cd "$PROJECT" && npm run build && launchctl kickstart -k "$GUI/$S" && echo "已重建并重启网页服务" ;;
   web)   launchctl kickstart -k "$GUI/$S" && echo "网页服务已重启" ;;
   logs)  tail -f ~/Library/Logs/afs-worker.log ;;
-  open)  open http://localhost:3000 ;;
+  open)  cd "$PROJECT" && exec ./open-feed.command ;;
   start)
     launchctl bootstrap "$GUI" ~/Library/LaunchAgents/$W.plist 2>/dev/null
     launchctl bootstrap "$GUI" ~/Library/LaunchAgents/$S.plist 2>/dev/null

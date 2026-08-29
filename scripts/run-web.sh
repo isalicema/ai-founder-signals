@@ -2,7 +2,17 @@
 # feed 网页常驻在 localhost:3000。由 launchd KeepAlive 守着。
 set -u
 PROJECT="$HOME/Projects/ai-founder-signals"
-[[ -s "$HOME/.nvm/nvm.sh" ]] && source "$HOME/.nvm/nvm.sh" --no-use && nvm use --silent default 2>/dev/null
+# node 三级探测：launchd 的 shell 不加载 ~/.zshrc，nvm.sh 也可能不存在。
+# 形式参考 kimi work/api-usage-board/serve.command——比只 source nvm.sh 稳。
+NODE=$(command -v node 2>/dev/null || true)
+if [[ -z "$NODE" && -s "$HOME/.nvm/nvm.sh" ]]; then
+  source "$HOME/.nvm/nvm.sh" >/dev/null 2>&1
+  NODE=$(command -v node 2>/dev/null || true)
+fi
+if [[ -z "$NODE" ]]; then
+  NODE=$(ls -d "$HOME"/.nvm/versions/node/*/bin/node 2>/dev/null | sort -V | tail -1)
+fi
+[[ -n "$NODE" ]] && export PATH="$(dirname "$NODE"):$PATH"
 export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"
 cd "$PROJECT" || exit 1
 
