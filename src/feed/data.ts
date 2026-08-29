@@ -64,7 +64,13 @@ export async function loadFeed(): Promise<FeedPayload> {
         })
         .from(entities),
       connection.db
-        .select({ persons: items.persons, companies: items.companies })
+        .select({
+          persons: items.persons,
+          companies: items.companies,
+          sourceId: items.sourceId,
+          publishedAt: items.publishedAt,
+          firstSeenAt: items.firstSeenAt,
+        })
         .from(items)
         .where(gte(items.firstSeenAt, new Date(Date.now() - THIRTY_DAYS_MS))),
     ]);
@@ -139,12 +145,49 @@ function entityRef(
   return { id: entity?.id ?? null, kind, name, starred: entity?.starred ?? false };
 }
 
-function countMentions(rows: Array<{ persons: string[] | null; companies: string[] | null }>): Map<string, number> {
-  const counts = new Map<string, number>();
+interface MentionRow {
+  persons: string[] | null;
+  companies: string[] | null;
+  sourceId: string;
+  publishedAt: Date | null;
+  firstSeenAt: Date;
+}
+
+/** 同一信源、同一人物、发布时间相差在此之内 → 视为同一场对话的切片 */
+const SAME_CONVERSATION_MS = 3 * 24 * 60 * 60 * 1000;
+
+/**
+ * 数「对话」而不是数「条目」。
+ *
+ * 实测：Lex Fridman 把一场 DHH 访谈切成 5 条视频分两天发布，角标就显示成
+ * 「DHH 本月第 5 场」——但那是一场对话。切片的字幕内容各不相同，
+ * simhash 去重挡不住，只能在计数这一层按「同源 + 同人 + 相近日期」聚类。
+ *
+ * 这个角标的意义是「这个人在密集发声」，一场被切五段不构成密集发声。
+ */
+export function countMentions(rows: MentionRow[]): Map<string, number> {
+  const byName = new Map<string, Array<{ sourceId: string; at: number }>>();
   for (const row of rows) {
+    const at = (row.publishedAt ?? row.firstSeenAt).getTime();
     for (const name of new Set([...(row.persons ?? []), ...(row.companies ?? [])])) {
-      counts.set(name, (counts.get(name) ?? 0) + 1);
+      const list = byName.get(name) ?? [];
+      list.push({ sourceId: row.sourceId, at });
+      byName.set(name, list);
     }
+  }
+
+  const counts = new Map<string, number>();
+  for (const [name, appearances] of byName) {
+    appearances.sort((a, b) => a.at - b.at);
+    let conversations = 0;
+    const lastPerSource = new Map<string, number>();
+    for (const { sourceId, at } of appearances) {
+      const previous = lastPerSource.get(sourceId);
+      // 换了信源，或与该信源上一次相隔超过窗口 → 算新的一场
+      if (previous === undefined || at - previous > SAME_CONVERSATION_MS) conversations += 1;
+      lastPerSource.set(sourceId, at);
+    }
+    counts.set(name, conversations);
   }
   return counts;
 }
