@@ -63,17 +63,27 @@ try {
       console.error('用法：npx tsx tools/archiveQueue.ts done <item-id>');
       process.exit(1);
     }
+    // ⚠️ 只更新「还没归档」的，否则重复跑会静默重新盖时间戳，
+    //    让人以为又处理了一遍。批量处理时最容易误判。
     const updated = await connection.db
       .update(items)
       .set({ archivedAt: new Date() })
-      .where(and(eq(items.id, argument), isNotNull(items.archiveRequestedAt)))
+      .where(and(eq(items.id, argument), isNotNull(items.archiveRequestedAt), isNull(items.archivedAt)))
       .returning({ id: items.id, title: items.title });
 
     if (updated.length === 0) {
-      console.error(`❌ 没找到待归档的条目 ${argument}（可能 id 错了，或它本来就没被标记）`);
-      process.exit(1);
+      const [existing] = await connection.db
+        .select({ title: items.title, archivedAt: items.archivedAt })
+        .from(items).where(eq(items.id, argument));
+      if (existing?.archivedAt) {
+        console.log(`↩︎ 早就归档过了（${existing.archivedAt.toISOString().slice(0, 16).replace('T', ' ')}）：${existing.title}`);
+      } else {
+        console.error(`❌ 没找到待归档的条目 ${argument}（可能 id 错了，或它本来就没被标记）`);
+        process.exitCode = 1;
+      }
+    } else {
+      console.log(`✅ 已归档：${updated[0]!.title}`);
     }
-    console.log(`✅ 已归档：${updated[0]!.title}`);
   } else {
     console.log(`收藏队列
 
