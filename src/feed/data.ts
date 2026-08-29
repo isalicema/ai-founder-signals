@@ -86,7 +86,7 @@ export async function loadFeed(): Promise<FeedPayload> {
     // 高亮不再用绝对分数——「今天最值得先看的 N 场」每天都有意义，
     // 「分数超过某个数」看运气（实测过：最高 0.64、门槛 0.65 → 一条都没有）
     const highlighted = pickHighlights(
-      rows.map((row) => ({ id: row.id, tierScore: row.tierScore })),
+      rows.map((row) => ({ id: row.id, tierScore: row.tierScore, tier: tier(row.tier) })),
     );
 
     return {

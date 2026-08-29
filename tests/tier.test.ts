@@ -52,6 +52,15 @@ describe('分档打分（2026-08-29 改版）', () => {
     expect(Object.values(r.reason).reduce((a, b) => a + b, 0)).toBeCloseTo(r.score, 4);
   });
 
+  it('⭐ 被拒条目的判定置信度不能当正分（实测回归）', () => {
+    // 被拒时 admissionConfidence 表示「确信它**不是**创始人访谈」。
+    // 当正分加会让「判得最准的拒绝」得最高分——调用方必须传 0。
+    const asPositive = scoreTier({ purity: 0.8, titleSignal: 1, admissionConfidence: 0.95, contentChars: null });
+    const rejected = scoreTier({ purity: 0.8, titleSignal: 1, admissionConfidence: 0, contentChars: null });
+    expect(rejected.score).toBeLessThan(asPositive.score);
+    expect(rejected.reason.admissionConfidence).toBe(0);
+  });
+
   it('入库只判够不够进 feed，不判高亮', () => {
     expect(initialTier(0.9)).toBe('feed');
     expect(initialTier(0.2)).toBe('folded');
@@ -59,26 +68,33 @@ describe('分档打分（2026-08-29 改版）', () => {
 });
 
 describe('高亮改为当天排名', () => {
-  const items = [
-    { id: 'a', tierScore: 0.64 }, { id: 'b', tierScore: 0.60 },
-    { id: 'c', tierScore: 0.55 }, { id: 'd', tierScore: 0.52 },
-    { id: 'e', tierScore: 0.20 },
-  ];
+  const feed = (id: string, tierScore: number) => ({ id, tierScore, tier: 'feed' as const });
+  const items = [feed('a', 0.64), feed('b', 0.60), feed('c', 0.55), feed('d', 0.52), feed('e', 0.20)];
 
   it('⭐ 取当天前 3 场 —— 绝对门槛会「有的天 0 条、有的天 20 条」', () => {
     expect([...pickHighlights(items)]).toEqual(['a', 'b', 'c']);
   });
 
   it('折叠线以下的不参与高亮，哪怕当天条目很少', () => {
-    expect([...pickHighlights([{ id: 'x', tierScore: 0.2 }])]).toEqual([]);
+    expect([...pickHighlights([feed('x', 0.2)])]).toEqual([]);
+  });
+
+  it('⭐ 被折叠的条目绝不参与高亮，哪怕分数很高（实测回归）', () => {
+    // 「对谈英伟达研究副总裁」「对谈投资人汪天凡」——受访者不是创始人被判 folded，
+    // 但拒绝判得很准 → 分数很高 → 曾被顶进高亮。光看分数不够，必须先排除 folded。
+    const picked = pickHighlights([
+      { id: 'rejected', tierScore: 0.73, tier: 'folded' as const },
+      feed('ok', 0.50),
+    ]);
+    expect([...picked]).toEqual(['ok']);
   });
 
   it('条目不足 N 条时有几条算几条，不报错', () => {
-    expect(pickHighlights([{ id: 'x', tierScore: 0.9 }]).size).toBe(1);
+    expect(pickHighlights([feed('x', 0.9)]).size).toBe(1);
     expect(pickHighlights([]).size).toBe(0);
   });
 
   it('tierScore 为 null 当 0 处理', () => {
-    expect(pickHighlights([{ id: 'x', tierScore: null }]).size).toBe(0);
+    expect(pickHighlights([{ id: 'x', tierScore: null, tier: 'feed' as const }]).size).toBe(0);
   });
 });

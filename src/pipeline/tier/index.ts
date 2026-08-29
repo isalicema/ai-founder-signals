@@ -78,13 +78,15 @@ export function initialTier(score: number): Tier {
  * 门槛降到 0.55 又可能哪天冒出二十条。对每天都看的 feed，
  * 「今天最值得先看的 3 场」永远有意义，「分数超过某个数」看运气。
  */
-export function pickHighlights<T extends { id: string; tierScore: number | null }>(
+export function pickHighlights<T extends { id: string; tierScore: number | null; tier: Tier }>(
   items: T[],
   count = HIGHLIGHT_COUNT,
 ): Set<string> {
   return new Set(
     [...items]
-      .filter((item) => (item.tierScore ?? 0) >= FOLD_BELOW)
+      // ⚠️ 必须先排除 folded，光看分数不够——被拒条目也有分数，
+      //    而且拒绝判得越准分越高。实测把两条「受访者不是创始人」顶进了高亮。
+      .filter((item) => item.tier !== 'folded' && (item.tierScore ?? 0) >= FOLD_BELOW)
       .sort((a, b) => (b.tierScore ?? 0) - (a.tierScore ?? 0))
       .slice(0, count)
       .map((item) => item.id),

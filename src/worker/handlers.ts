@@ -152,11 +152,16 @@ export async function handleProcess(
 
   // ⚠️ 被拒的仍然入库，只是不下载正文、不生成摘要。永不丢弃，只降权（§4.4）
   if (!admission.shouldFetchBody) {
-    // 被拒条目也算分并留痕，便于以后回看判定分布；tier 强制 folded
+    // 被拒条目也算分并留痕，便于以后回看判定分布；tier 强制 folded。
+    //
+    // ⚠️ admissionConfidence 传 0，不能用 admission.admissionConfidence——
+    //    被拒时那个数表示「**确信它不是**创始人访谈」，是拒绝的把握程度。
+    //    当正分加进去会让「判得最准的拒绝」得最高分。实测踩过：
+    //    「对谈英伟达研究副总裁」「对谈投资人汪天凡」两条被顶进了高亮。
     const tier = scoreTier({
       purity: source.purity,
       titleSignal: admission.titleSignalScore,
-      admissionConfidence: admission.admissionConfidence,
+      admissionConfidence: 0,
       contentChars: null,
     });
     await insert(ctx, { ...base, tier: 'folded', tierScore: tier.score, tierReason: tier.reason,
