@@ -4,6 +4,8 @@
 > 线索来自 Alice：irreader 能解析 Founder Park 那个 JS 渲染页面。
 > 顺着这条线索查下去，发现了比 irreader 更好的路子——**不需要浏览器**。
 
+> ✅ 2026-08-29 已完成：三个真源分别发现 6 / 20 / 20 条，日期、幂等与正文接缝均通过。
+
 ## 0. 结论：3 个「发现不了内容」的信源可以恢复，而且数据比抓 HTML 更好
 
 irreader 用的是「动态订阅（能耗+）」= 真浏览器渲染后套 CSS 选择器（`DIV[class="story-item"]>A`）。
@@ -107,15 +109,18 @@ export interface SourceConfig {
     "offset_info": "", "tabId": "om_index", "caller": "1", "from_scene": "103",
     "guestSuid": "8QIf3n9a7oYauzjc5QE="
   },
-  "itemsPath": "…（响应嵌套较深，实现时按实际结构填）",
-  "map": { "externalId": "…", "title": "title", "publishedAt": "publish_time" }
+  "itemsPath": "newslist",
+  "map": {
+    "externalId": "id", "title": "title", "snippet": "abstract",
+    "publishedAt": "time", "coverUrl": "thumbnails.0", "url": "url"
+  }
 }
 ```
 
 Z Potentials 只换 `guestSuid` 为 `8QIf3nxd5YwYvz/c5wM=`。
 
-⚠️ 腾讯的响应体 300KB、嵌套较深，`itemsPath` 我没有逐层确认，**实现时先 dump 一次响应
-再填**。两个源实测都返回 20 条，含 `title` 和 `publish_time`。
+腾讯的响应体约 300KB，实测文章数组位于顶层 `newslist`；两个源均返回 20 条，
+发布时间字段是 `time`，列表项本身还带 `abstract`、`thumbnails` 和可直接打开的 `url`。
 
 ---
 

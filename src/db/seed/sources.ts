@@ -36,10 +36,7 @@ export const SEED_SOURCES: NewSource[] = [
         coverUrl: 'cover_url', urlTemplate: 'https://hub.baai.ac.cn/view/{externalId}',
       },
     },
-    // ⚠️ 页面 JS 渲染，curl 拿不到文章链接。
-    // ✅ 但已找到无认证的 JSON 接口（POST hub-api.baai.ac.cn/api/v1/stories/user），
-    //    实测 6 条含标题/摘要/时间/封面。等 JsonApiAdapter 落地即可恢复，
-    //    届时改为 ingestMethod:'json_api' + config。见 docs/SPEC-JsonApiAdapter.md
+    // ✅ 页面虽为 JS 渲染，但已改走无认证 JSON API；实测 6 条且正文页可直接抓取。
   },
   {
     name: '品玩 PingWest（硅星人）', url: 'https://www.pingwest.com/',
@@ -71,8 +68,7 @@ export const SEED_SOURCES: NewSource[] = [
         coverUrl: 'thumbnails.0', url: 'url',
       },
     },
-    // ✅ 已找到无认证接口 GET i.news.qq.com/getSubNewsMixedList，实测 20 条。
-    //    等 JsonApiAdapter 恢复。见 docs/SPEC-JsonApiAdapter.md
+    // ✅ 无认证 JSON API 实测 20 条，配置驱动，无站点分支。
   },
   {
     name: 'Z Potentials（腾讯新闻镜像）',
@@ -91,7 +87,7 @@ export const SEED_SOURCES: NewSource[] = [
         coverUrl: 'thumbnails.0', url: 'url',
       },
     },
-    // ✅ 同上，同一接口换 guestSuid，实测 20 条。等 JsonApiAdapter 恢复。
+    // ✅ 同一接口只换 guestSuid，实测 20 条。
   },
   {
     name: 'AI 闹', url: 'https://elsewhere.news/zh/ainow',

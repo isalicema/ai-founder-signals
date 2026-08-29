@@ -39,10 +39,14 @@ describe('JsonApiAdapter', () => {
         href: 'https://example.com/articles/42',
       },
     ] } };
-    const fetcherMock = vi.fn(async () => new Response(JSON.stringify(payload), {
-      headers: { 'content-type': 'application/json' },
-    }));
-    const adapter = new JsonApiAdapter({ fetcher: fetcherMock as typeof fetch });
+    let requestedUrl = '';
+    let requestedInit: RequestInit | undefined;
+    const fetcher: typeof fetch = async (input, init) => {
+      requestedUrl = String(input);
+      requestedInit = init;
+      return new Response(JSON.stringify(payload), { headers: { 'content-type': 'application/json' } });
+    };
+    const adapter = new JsonApiAdapter({ fetcher });
 
     const first = await adapter.discover(source(getConfig));
     const second = await adapter.discover(source(getConfig));
@@ -58,10 +62,9 @@ describe('JsonApiAdapter', () => {
       admissionSnippet: '产品证据与失败复盘。',
       languageHint: 'zh',
     }]);
-    const [requestUrl, init] = fetcherMock.mock.calls[0]!;
-    expect(String(requestUrl)).toContain('page=1');
-    expect(String(requestUrl)).toContain('order=new');
-    expect((init?.headers as Headers).get('referer')).toBe('https://example.com/');
+    expect(requestedUrl).toContain('page=1');
+    expect(requestedUrl).toContain('order=new');
+    expect((requestedInit?.headers as Headers).get('referer')).toBe('https://example.com/');
   });
 
   it('sends configured POST JSON and expands the external-id URL template', async () => {
@@ -74,20 +77,23 @@ describe('JsonApiAdapter', () => {
         urlTemplate: 'https://example.com/view/{externalId}',
       },
     };
-    const fetcherMock = vi.fn(async () => new Response(JSON.stringify({ items: [{
-      key: 'story/7', title: 'Founder retrospective', created: 1_787_884_234,
-    }] })));
-    const items = await new JsonApiAdapter({ fetcher: fetcherMock as typeof fetch }).discover(source(config));
+    let requestedInit: RequestInit | undefined;
+    const fetcher: typeof fetch = async (_input, init) => {
+      requestedInit = init;
+      return new Response(JSON.stringify({ items: [{
+        key: 'story/7', title: 'Founder retrospective', created: 1_787_884_234,
+      }] }));
+    };
+    const items = await new JsonApiAdapter({ fetcher }).discover(source(config));
 
     expect(items[0]).toMatchObject({
       externalId: 'story/7',
       url: 'https://example.com/view/story%2F7',
       publishedAt: new Date(1_787_884_234_000),
     });
-    const init = fetcherMock.mock.calls[0]?.[1];
-    expect(init?.method).toBe('POST');
-    expect(init?.body).toBe(JSON.stringify({ page: 1, sort: 'new' }));
-    expect((init?.headers as Headers).get('content-type')).toBe('application/json');
+    expect(requestedInit?.method).toBe('POST');
+    expect(requestedInit?.body).toBe(JSON.stringify({ page: 1, sort: 'new' }));
+    expect((requestedInit?.headers as Headers).get('content-type')).toBe('application/json');
   });
 
   it('returns an empty list when itemsPath is absent and skips malformed rows', async () => {

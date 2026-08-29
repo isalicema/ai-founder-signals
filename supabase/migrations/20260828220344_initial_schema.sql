@@ -1,3 +1,5 @@
+-- The remote baseline was originally recorded under this migration version.
+-- Keep the canonical replay-safe schema here so a fresh database still starts complete.
 create extension if not exists pg_trgm with schema extensions;
 
 create type public.item_tier as enum ('highlight', 'feed', 'folded');

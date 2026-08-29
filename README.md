@@ -17,6 +17,7 @@ AI 创始人一手访谈探测器 —— `collection-manager` 的前置漏斗。
 | M2（Drizzle schema / Supabase migration / RLS） | 星子 | ✅ 代码完成；待有容器或远程项目时重放迁移 |
 | M3（Job 队列 / worker 骨架 / 临时区） | 星子 | ✅ 已完成 |
 | M4（RSS / 播客 / YouTube 适配器） | 星子 | ✅ 已完成；11 个真实 seed 源 discover 全通过 |
+| M4.5（通用 JSON API 适配器） | 星子 | ✅ 已完成；3 个真源发现 6 / 20 / 20 条，可跑信源增至 14 |
 | M5（Feed 页） | 星子 | ✅ 已完成；桌面与 390px 移动端浏览器验收通过 |
 | M6（收藏队列接缝） | 星子 / 妙蛙种子 | ⏳ 下一步 |
 | 信源 seed | Alice / 妙蛙种子 | ✅ 17 个实测源已入库 |
@@ -47,7 +48,7 @@ supabase/               可重放 migration + 默认封闭的 RLS 测试
 npm install
 npm run lint      # ESLint
 npm run typecheck # tsc --noEmit
-npm test          # Vitest，当前 79 项
+npm test          # Vitest，当前 149 项
 npm run build     # Next.js production build
 ```
 
