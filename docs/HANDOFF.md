@@ -196,12 +196,15 @@ enqueueDailyDiscover  每个启用信源一个 discover 任务（key 带日期�
 3. **异常只记安全分类码**——`classify()` 对未知异常一律返回 `unclassified_error`，
    不让异常消息（可能含正文片段）流进数据库
 
-### ⚠️ rescore 任务故意没实现
+### ⚠️ 没有 rescore，也不要加
 
-`dispatch()` 里 rescore 直接抛错。实现前必须先解决**「反馈会被 rescore 洗掉」**：
-`item` 表没有 `user_signal` 列，rescore 从 `tier_score` 重算 tier 会抹掉 Alice
-手动点的 👍👎。要么加回该列并让 rescore 跳过，要么让 rescore 查 `feedback`
-最新信号。**这是我压表时删掉那列留下的坑，别在没定规则前实现 rescore。**
+反馈不调权（Alice 看完首批 50 条后的决定）：她不点赞不点踩、不调信源权重，
+信源已经少而精，只看卡片本身质量。所以**没有任何东西会重算已有条目的 tier**，
+手动设的高亮/折叠永远不会被覆盖——原先那个「反馈会被 rescore 洗掉」的隐患
+随之消失，`user_signal` 列也不需要了。
+
+`feedback` 表继续只写不读，保留 `opened_source` / `archive_requested` 的自动埋点
+（行为信号比评价信号诚实），哪天想回看「常点哪些源的原文」数据是现成的。
 
 ---
 

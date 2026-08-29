@@ -120,10 +120,8 @@ async function dispatch(ctx: HandlerContext, kind: string, payload: unknown): Pr
     const result = await handleProcess(ctx, payload as never);
     return result.outcome;
   }
-  if (kind === 'rescore') {
-    // M9/M10。⚠️ 实现前必须先解决「反馈会被 rescore 洗掉」——见 docs/HANDOFF.md
-    throw new AdapterError('unsupported_ingest_method', { retryable: false });
-  }
+  // ⚠️ 没有 rescore。反馈不调权（Alice 看完首批 50 条后的决定，见 PROJECT.md §4.11），
+  //    所以没有任何东西会重算已有条目的 tier——手动点的高亮/折叠永远不会被覆盖。
   throw new AdapterError('unsupported_ingest_method', { retryable: false });
 }
 

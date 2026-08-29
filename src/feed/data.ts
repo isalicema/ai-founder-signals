@@ -2,6 +2,7 @@ import { desc, eq, gte, sql } from 'drizzle-orm';
 import { sharedDb } from '../db/shared';
 import { entities, items, sources } from '../db/schema';
 import { createDemoFeed } from './demo';
+import { pickHighlights } from '../pipeline/tier/index';
 import type {
   FeedEntityRef,
   FeedItemView,
@@ -43,6 +44,7 @@ export async function loadFeed(): Promise<FeedPayload> {
           persons: items.persons,
           companies: items.companies,
           tier: items.tier,
+          tierScore: items.tierScore,
           readAt: items.readAt,
           archiveRequestedAt: items.archiveRequestedAt,
           status: items.status,
@@ -81,6 +83,12 @@ export async function loadFeed(): Promise<FeedPayload> {
     ]));
     const mentionCounts = countMentions(recentRows);
 
+    // 高亮不再用绝对分数——「今天最值得先看的 N 场」每天都有意义，
+    // 「分数超过某个数」看运气（实测过：最高 0.64、门槛 0.65 → 一条都没有）
+    const highlighted = pickHighlights(
+      rows.map((row) => ({ id: row.id, tierScore: row.tierScore })),
+    );
+
     return {
       items: rows.map((row) => {
         const persons = row.persons ?? [];
@@ -113,7 +121,7 @@ export async function loadFeed(): Promise<FeedPayload> {
           persons,
           companies,
           entities: itemEntities,
-          tier: tier(row.tier),
+          tier: highlighted.has(row.id) ? 'highlight' : tier(row.tier),
           readAt: row.readAt?.toISOString() ?? null,
           archiveRequestedAt: row.archiveRequestedAt?.toISOString() ?? null,
           status: row.status,

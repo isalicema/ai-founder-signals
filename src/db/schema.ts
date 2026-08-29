@@ -21,10 +21,10 @@ import type { SourceConfig } from '../adapters/config.js';
 export const itemTier = pgEnum('item_tier', ['highlight', 'feed', 'folded']);
 
 export interface TierReason {
-  sourceWeight: number;
+  purity: number;
   titleSignal: number;
   admissionConfidence: number;
-  entityStarred: number;
+  substance: number;
   [key: string]: number;
 }
 

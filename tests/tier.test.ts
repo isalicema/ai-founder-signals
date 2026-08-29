@@ -1,40 +1,84 @@
 import { describe, it, expect } from 'vitest';
-import { scoreTier, normalizeSourceWeight, WEIGHTS } from '../src/pipeline/tier/index.js';
+import {
+  scoreTier, initialTier, pickHighlights, WEIGHTS, FULL_LENGTH_CHARS, FOLD_BELOW,
+} from '../src/pipeline/tier/index.js';
 
-describe('tier 分档', () => {
-  it('好信源 + 强标题信号 → highlight', () => {
-    const r = scoreTier({ sourceWeight: 0.9, titleSignal: 1.0, admissionConfidence: 1.0, entityStarred: false });
-    expect(r.tier).toBe('highlight');
+const perfect = { purity: 1, titleSignal: 1, admissionConfidence: 1, contentChars: 40_000 };
+/** 现有信源里 purity 最高是 Founder Park 的 0.8 */
+const full = { ...perfect, purity: 0.8 };
+
+describe('分档打分（2026-08-29 改版）', () => {
+  it('权重之和为 1', () => {
+    expect(Object.values(WEIGHTS).reduce((a, b) => a + b, 0)).toBeCloseTo(1, 6);
   });
 
-  it('弱信号 → folded，但仍然入库（调用方负责不丢弃）', () => {
-    const r = scoreTier({ sourceWeight: 0.2, titleSignal: 0, admissionConfidence: 0, entityStarred: false });
-    expect(r.tier).toBe('folded');
+  it('⭐ 满分可达 —— 旧公式实测最高只到 0.50，高亮档形同虚设', () => {
+    expect(scoreTier(perfect).score).toBeCloseTo(1, 4);
+    // 现实里最好的信源（purity 0.8）配强标题+完整正文能到 0.93，远高于旧公式的 0.50
+    expect(scoreTier(full).score).toBeGreaterThan(0.9);
   });
 
-  it('tier_reason 可解释，四项都在', () => {
-    const r = scoreTier({ sourceWeight: 0.5, titleSignal: 0.5, admissionConfidence: 0.5, entityStarred: true });
-    expect(Object.keys(r.reason).sort()).toEqual(
-      ['admissionConfidence', 'entityStarred', 'sourceWeight', 'titleSignal'],
-    );
+  it('⭐ 长完整访谈排在短切片前面（真实数据回归）', () => {
+    // Greg Isenberg WebMCP 55,838 字 vs Kantrowitz 切片 1,083 字，
+    // 两者同信源档次、同为弱标题信号，唯一差别就是内容长度
+    const base = { purity: 0.4, titleSignal: 0.3, admissionConfidence: 0.9 };
+    const long = scoreTier({ ...base, contentChars: 55_838 });
+    const clip = scoreTier({ ...base, contentChars: 1_083 });
+    expect(long.score).toBeGreaterThan(clip.score);
+    // 差距要够大到能改变排名——接近满额的充实度分
+    expect(long.score - clip.score).toBeGreaterThan(0.15);
+  });
+
+  it('切片在其它维度也弱时会沉到折叠线以下', () => {
+    // 折叠与否不只看长度：判定置信度低、信源 purity 低时才真的沉底
+    const weak = scoreTier({ purity: 0.3, titleSignal: 0.3, admissionConfidence: 0.5, contentChars: 1_083 });
+    expect(weak.score).toBeLessThan(FOLD_BELOW);
+  });
+
+  it('内容充实度到 2 万字封顶，不让超长内容无限加分', () => {
+    const at = scoreTier({ ...full, contentChars: FULL_LENGTH_CHARS }).score;
+    const over = scoreTier({ ...full, contentChars: FULL_LENGTH_CHARS * 5 }).score;
+    expect(over).toBe(at);
+  });
+
+  it('contentChars 为 null 时不崩（被拒条目不抓正文）', () => {
+    expect(() => scoreTier({ ...full, contentChars: null })).not.toThrow();
+  });
+
+  it('tier_reason 四项齐全且可解释', () => {
+    const r = scoreTier(full);
+    expect(Object.keys(r.reason).sort())
+      .toEqual(['admissionConfidence', 'purity', 'substance', 'titleSignal']);
     expect(Object.values(r.reason).reduce((a, b) => a + b, 0)).toBeCloseTo(r.score, 4);
   });
 
-  it('⭐ 星标权重不足以把新面孔挤下去（§0.5）', () => {
-    // 陌生人 + 强标题信号 + 好信源
-    const stranger = scoreTier({ sourceWeight: 0.9, titleSignal: 1.0, admissionConfidence: 1.0, entityStarred: false });
-    // 星标人物 + 无标题信号 + 差信源
-    const starred = scoreTier({ sourceWeight: 0.2, titleSignal: 0.3, admissionConfidence: 0.3, entityStarred: true });
-    expect(stranger.score).toBeGreaterThan(starred.score);
-    expect(WEIGHTS.entityStarred).toBeLessThan(WEIGHTS.titleSignal);
+  it('入库只判够不够进 feed，不判高亮', () => {
+    expect(initialTier(0.9)).toBe('feed');
+    expect(initialTier(0.2)).toBe('folded');
+  });
+});
+
+describe('高亮改为当天排名', () => {
+  const items = [
+    { id: 'a', tierScore: 0.64 }, { id: 'b', tierScore: 0.60 },
+    { id: 'c', tierScore: 0.55 }, { id: 'd', tierScore: 0.52 },
+    { id: 'e', tierScore: 0.20 },
+  ];
+
+  it('⭐ 取当天前 3 场 —— 绝对门槛会「有的天 0 条、有的天 20 条」', () => {
+    expect([...pickHighlights(items)]).toEqual(['a', 'b', 'c']);
   });
 
-  it('权重之和为 1', () => {
-    expect(Object.values(WEIGHTS).reduce((a, b) => a + b, 0)).toBeCloseTo(1.0, 6);
+  it('折叠线以下的不参与高亮，哪怕当天条目很少', () => {
+    expect([...pickHighlights([{ id: 'x', tierScore: 0.2 }])]).toEqual([]);
   });
 
-  it('source.weight 归一化', () => {
-    expect(normalizeSourceWeight(0.2)).toBe(0);
-    expect(normalizeSourceWeight(2.0)).toBe(1);
+  it('条目不足 N 条时有几条算几条，不报错', () => {
+    expect(pickHighlights([{ id: 'x', tierScore: 0.9 }]).size).toBe(1);
+    expect(pickHighlights([]).size).toBe(0);
+  });
+
+  it('tierScore 为 null 当 0 处理', () => {
+    expect(pickHighlights([{ id: 'x', tierScore: null }]).size).toBe(0);
   });
 });

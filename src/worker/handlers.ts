@@ -7,7 +7,7 @@ import { canonicalizeUrl } from '../adapters/url.js';
 import { FetchBlockedError, AdapterError } from '../adapters/errors.js';
 import type { DiscoveredItem } from '../adapters/types.js';
 import { admit, evaluateStructural } from '../pipeline/admission/index.js';
-import { scoreTier, normalizeSourceWeight } from '../pipeline/tier/index.js';
+import { scoreTier, initialTier } from '../pipeline/tier/index.js';
 import { createLlmJudge } from '../llm/judge.js';
 import type { UsageLedger } from '../llm/provider.js';
 import { withTempWorkspace } from './tempWorkspace.js';
@@ -152,11 +152,12 @@ export async function handleProcess(
 
   // ⚠️ 被拒的仍然入库，只是不下载正文、不生成摘要。永不丢弃，只降权（§4.4）
   if (!admission.shouldFetchBody) {
+    // 被拒条目也算分并留痕，便于以后回看判定分布；tier 强制 folded
     const tier = scoreTier({
-      sourceWeight: normalizeSourceWeight(source.weight),
+      purity: source.purity,
       titleSignal: admission.titleSignalScore,
       admissionConfidence: admission.admissionConfidence,
-      entityStarred: false,
+      contentChars: null,
     });
     await insert(ctx, { ...base, tier: 'folded', tierScore: tier.score, tierReason: tier.reason,
       rejectReason: admission.rejectReason ?? 'admission_rejected' });
@@ -196,10 +197,10 @@ export async function handleProcess(
   });
 
   const tier = scoreTier({
-    sourceWeight: normalizeSourceWeight(source.weight),
+    purity: source.purity,
     titleSignal: +(admission.titleSignalScore * structural.factor).toFixed(4),
     admissionConfidence: admission.admissionConfidence,
-    entityStarred: persons.anyStarred || companies.anyStarred,
+    contentChars: analysis.contentChars ?? null,
   });
 
   await insert(ctx, {
@@ -211,7 +212,7 @@ export async function handleProcess(
     contentChars: analysis.contentChars ?? null,
     simhash: analysis.simhash ?? null,
     modelVersion: analysis.modelVersion,
-    tier: tier.tier,
+    tier: initialTier(tier.score),
     tierScore: tier.score,
     tierReason: tier.reason,
   });
