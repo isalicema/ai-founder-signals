@@ -88,9 +88,10 @@ export function discoverHtmlLinks(
     }
     if (!['http:', 'https:'].includes(url.protocol) || url.origin !== page.origin) continue;
 
-    // Reuse the guarded plain-text converter so image URLs and hrefs can never
-    // masquerade as titles. This is the sole L1 admission input downstream.
-    const title = extractArticleText(body);
+    // Prefer semantic title/headline descendants when a card-level anchor also
+    // wraps dates or excerpts. Fall back to the whole anchor for simple lists.
+    // This is the sole L1 admission input downstream.
+    const title = anchorTitle(body);
     const coverUrl = firstImageUrl(body, url);
     const candidate: LinkCandidate = {
       externalId: externalIdFor(url),
@@ -113,13 +114,16 @@ export function discoverHtmlLinks(
   });
   const selected = ranked[0] ?? [];
   if (titleishCount(selected) < 3) return [];
+  const coversByUrl = new Map(selected
+    .filter((candidate): candidate is LinkCandidate & { coverUrl: string } => Boolean(candidate.coverUrl))
+    .map((candidate) => [candidate.url, candidate.coverUrl]));
 
   return selected.filter((candidate) => isTitleish(candidate.title)).map((candidate) => ({
     externalId: candidate.externalId,
     url: candidate.url,
     title: candidate.title,
     publishedAt: null,
-    ...(candidate.coverUrl ? { coverUrl: candidate.coverUrl } : {}),
+    ...(coversByUrl.get(candidate.url) ? { coverUrl: coversByUrl.get(candidate.url) } : {}),
     mediaType: 'article',
     ...(languageHint ? { languageHint } : {}),
   }));
@@ -127,6 +131,23 @@ export function discoverHtmlLinks(
 
 function titleishCount(candidates: LinkCandidate[]): number {
   return candidates.reduce((count, candidate) => count + Number(isTitleish(candidate.title)), 0);
+}
+
+function anchorTitle(body: string): string {
+  for (const match of body.matchAll(/<([a-z][\w-]*)\b([^>]*)>/gi)) {
+    const tag = (match[1] ?? '').toLowerCase();
+    const classes = attribute(match[2] ?? '', 'class')?.split(/\s+/) ?? [];
+    const semantic = /^h[1-6]$/.test(tag) || classes.some((className) =>
+      /(?:^|[-_])(title|headline)(?:$|[-_])/i.test(className));
+    if (!semantic) continue;
+    const afterTag = body.slice((match.index ?? 0) + match[0].length);
+    const closingIndex = afterTag.search(new RegExp(`<\\/${tag}\\s*>`, 'i'));
+    if (closingIndex < 0) continue;
+    const title = extractArticleText(afterTag.slice(0, closingIndex));
+    if (title) return title;
+  }
+
+  return extractArticleText(body);
 }
 
 function isTitleish(title: string): boolean {

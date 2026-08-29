@@ -1,16 +1,15 @@
-# HtmlAdapter 施工说明（M4.5）
+# HtmlAdapter 施工说明（M4.6，已完成）
 
-> 承接人：星子｜排在 M5 之后
+> 承接人：星子｜2026-08-29 完成
 > 目标：让 `ingestMethod: 'html'` 的信源可用。解锁三个——**晚点 LatePost**、**AI 闹**、
 > **品玩 PingWest（硅星人）**。三个的列表都在原始 HTML 里，实测可抓。
 
-## 0. 为什么只有两个
+## 0. 为什么只有三个
 
-seed 里 6 个 html 信源，另外 4 个（Founder Park 智源镜像 / 硅星人 36氪镜像 / 暗涌 / Z Potentials）
-实测**列表页 JS 渲染，curl 连文章链接都拿不到**——问题不是「抓不到正文」而是「发现不了新内容」，
-有了 HtmlAdapter 也没用。它们已 `enabled: false`，等浏览器抓取（Phase 2）或走 M8 手动投喂。
+seed 里现在只有本 spec 的 3 个 `html` 信源。原先 JS 渲染的 Founder Park、暗涌、
+Z Potentials 已改走配置化 `JsonApiAdapter`；36氪 / 知乎镜像因签名式反爬没有进入 seed。
 
-**不要为这 4 个写任何东西。**
+**不要为这些旧镜像或签名式入口补 HTML 分支。**
 
 ## 1. 范围
 
@@ -146,5 +145,11 @@ tests/fixtures/html/pingwest-list.html   ~30KB
 
 ## 5. 完成后
 
-告诉我，我把 seed 里晚点和 AI 闹的 `⏳ 等 HtmlAdapter` 注释去掉。
-届时可用信源从 11 个变成 14 个（晚点 / AI 闹 / 品玩）。
+已从 seed 去掉 `⏳ 等 HtmlAdapter` 注释。可用信源由 JSON API 完成后的 14 个增至 17 个。
+
+真实验收：晚点 / 品玩 / AI 闹分别发现 11 / 38 / 4 个标题锚；worker 按 external ID
+收敛为 11 / 29 / 4 个 process 任务。三条 discover 均 completed、失败数为 0、LLM 费用为 0。
+
+晚点当前服务器漏发 Let’s Encrypt Root YR 的 X1 交叉证书，Node 默认信任库无法补链。
+worker 通过 `NODE_EXTRA_CA_CERTS` 加载仓库内经指纹核验的官方 YR-by-X1 证书，正常 TLS
+校验保持开启；证书来源和移除条件见 `certs/README.md`。

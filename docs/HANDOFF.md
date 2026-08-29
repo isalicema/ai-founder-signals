@@ -12,11 +12,12 @@
 - ✅ M4：`SourceAdapter` 注册表、RSS/Atom、服务端播客页回退、YouTube Atom + yt-dlp 字幕
 - ✅ M4 真源冒烟：8 个 YouTube + 3 个播客 seed 均发现 15 条；字幕只在 M3 临时区出现并已验证清理
 - ✅ M4.5：通用 `JsonApiAdapter`、`source.config` migration、3 个配置化真源；发现 6 / 20 / 20 条且正文可取
+- ✅ M4.6：通用 `HtmlAdapter`，无 host/name 分支；晚点 / 品玩 / AI 闹真实发现 11 / 38 / 4 条且正文可取
 - ✅ M5：六维筛选、未读优先、highlight/feed/folded、🆕/🔥 badge、明确的「🤖 AI 摘要」分区
 - ✅ M5 交互：看原文、深看、👎、👍、entity 星标均为一次点击；folded 保留并可恢复
 - ✅ M5 浏览器验收：1440px 桌面与 390px 移动端通过，零横向溢出、零 console/page error
 - 🔒 M7 前默认演示模式；DB 读取和持久化动作分别由环境开关显式启用，避免匿名暴露私有 Feed
-- ⏳ migration 实库重放：当前机器没有 Docker/Podman/本地 Postgres，待有本地容器或远程 Supabase 项目时执行
+- ✅ migration 已在远程 Supabase 重放并审计；`source/item/job` RLS 保持开启
 
 ## 你的模块（按顺序）
 

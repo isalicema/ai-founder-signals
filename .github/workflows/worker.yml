@@ -52,6 +52,7 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           AFS_LLM_PROVIDER: deepseek
+          NODE_EXTRA_CA_CERTS: ${{ github.workspace }}/certs/letsencrypt-root-yr-by-x1.pem
         run: |
           set -o pipefail
           npx tsx tools/worker.ts \

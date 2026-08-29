@@ -20,7 +20,7 @@ export const SEED_SOURCES: NewSource[] = [
     name: '晚点 LatePost', url: 'https://www.latepost.com/',
     country: 'CN', language: 'zh', ingestMethod: 'html', fetchMode: 'full', purity: 0.5,
     // ✅ 实测：列表页 /news/dj_detail?id=NNNN 在原始 HTML 里；详情页 481 段约 4.7 万字可直取
-    // ⏳ 等 HtmlAdapter（M4 只交付了 rss/podcast/youtube，html 尚无实现）
+    // ✅ HtmlAdapter 实测发现 11 条；正文 9,429 字。worker 额外加载官方 YR-by-X1 交叉链。
   },
   {
     name: 'Founder Park（智源社区镜像）', url: 'https://hub.baai.ac.cn/users/74219',
@@ -43,7 +43,7 @@ export const SEED_SOURCES: NewSource[] = [
     country: 'CN', language: 'zh', ingestMethod: 'html', fetchMode: 'full', purity: 0.3,
     // ✅ 走原始发布方而不是镜像。实测首页服务端渲染，47 条 /a/{id} 在原始 HTML 里，
     //    详情页 17,822 字可直取。三个 html 信源里判据区分度最好（titleish 38 : 5）。
-    // ⏳ 等 HtmlAdapter，见 docs/SPEC-HtmlAdapter.md
+    // ✅ HtmlAdapter 实测发现 38 个标题锚（29 个唯一 ID），正文 5,434 字。
     //
     // 放弃过的两条路（都是签名式反爬，按 v2.1 §10.1 不做）：
     //   · 36氪镜像 gateway.36kr.com  → 需要 sign 请求签名
@@ -93,7 +93,7 @@ export const SEED_SOURCES: NewSource[] = [
     name: 'AI 闹', url: 'https://elsewhere.news/zh/ainow',
     country: 'CN', language: 'zh', ingestMethod: 'html', fetchMode: 'full', purity: 0.6,
     // ✅ 实测：列表 /zh/ainow/NNN 在原始 HTML 里，14 条
-    // ⏳ 等 HtmlAdapter
+    // ✅ HtmlAdapter 实测发现 4 条数字型/含数字 slug，正文 8,197 字。
   },
   {
     name: '十字路口 Crossing',

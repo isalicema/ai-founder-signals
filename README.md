@@ -18,6 +18,7 @@ AI 创始人一手访谈探测器 —— `collection-manager` 的前置漏斗。
 | M3（Job 队列 / worker 骨架 / 临时区） | 星子 | ✅ 已完成 |
 | M4（RSS / 播客 / YouTube 适配器） | 星子 | ✅ 已完成；11 个真实 seed 源 discover 全通过 |
 | M4.5（通用 JSON API 适配器） | 星子 | ✅ 已完成；3 个真源发现 6 / 20 / 20 条，可跑信源增至 14 |
+| M4.6（通用 HTML 适配器） | 星子 | ✅ 已完成；晚点 / 品玩 / AI 闹发现 11 / 38 / 4 条，17 个信源全可跑 |
 | M5（Feed 页） | 星子 | ✅ 已完成；桌面与 390px 移动端浏览器验收通过 |
 | M6（收藏队列接缝） | 星子 / 妙蛙种子 | ⏳ 下一步 |
 | 信源 seed | Alice / 妙蛙种子 | ✅ 17 个实测源已入库 |
@@ -37,7 +38,7 @@ src/pipeline/
 prompts/                L2 判定 + 摘要 prompt
 src/db/                 Drizzle 五表 schema + 服务端连接
 src/worker/             SKIP LOCKED 队列 + worker 红线编排 + 临时区生命周期
-src/adapters/           RSS/Atom、服务端播客页、YouTube Atom + yt-dlp 字幕
+src/adapters/           RSS/Atom、播客、YouTube、配置化 JSON API、通用 HTML 发现
 src/feed/               Feed 视图模型、DB 查询、演示数据、筛选与交互状态
 supabase/               可重放 migration + 默认封闭的 RLS 测试
 ```
@@ -48,7 +49,7 @@ supabase/               可重放 migration + 默认封闭的 RLS 测试
 npm install
 npm run lint      # ESLint
 npm run typecheck # tsc --noEmit
-npm test          # Vitest，当前 149 项
+npm test          # Vitest，当前 166 项
 npm run build     # Next.js production build
 ```
 

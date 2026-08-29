@@ -66,9 +66,12 @@ export async function handleDiscover(
   const cutoff = discoveryCutoff(source.lastCheckedAt);
   const recent = found.filter((i) => !i.publishedAt || i.publishedAt.getTime() >= cutoff.getTime());
   const tooOld = found.length - recent.length;
+  // HTML 首页常用同一 URL 同时包图片、标题和摘要。适配器保留这些锚点，
+  // worker 在排队边界按稳定 ID 收敛，避免重复 insert 和虚高 enqueued 计数。
+  const unique = uniqueDiscoveredItems(recent);
 
-  const seen = await existingExternalIds(ctx.db, source.id, recent.map((i) => i.externalId));
-  const fresh = recent.filter((i) => !seen.has(i.externalId));
+  const seen = await existingExternalIds(ctx.db, source.id, unique.map((i) => i.externalId));
+  const fresh = unique.filter((i) => !seen.has(i.externalId));
 
   for (const item of fresh) {
     await ctx.sql`
@@ -78,6 +81,16 @@ export async function handleDiscover(
     `;
   }
   return { found: found.length, enqueued: fresh.length, tooOld };
+}
+
+/** Card-style HTML can expose one URL through image, title and excerpt anchors. */
+export function uniqueDiscoveredItems(discovered: DiscoveredItem[]): DiscoveredItem[] {
+  const discoveredIds = new Set<string>();
+  return discovered.filter((item) => {
+    if (discoveredIds.has(item.externalId)) return false;
+    discoveredIds.add(item.externalId);
+    return true;
+  });
 }
 
 /** 首次检查某信源时的初始窗口，默认 1 天——只要「今天」。 */

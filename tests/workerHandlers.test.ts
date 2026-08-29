@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { handleProcess } from '../src/worker/handlers.js';
+import { handleProcess, uniqueDiscoveredItems } from '../src/worker/handlers.js';
 import { __setProvider } from '../src/llm/provider.js';
 import { UsageLedger } from '../src/llm/provider.js';
 import type { LlmProvider } from '../src/llm/types.js';
@@ -67,5 +67,14 @@ describe('process 任务的两条不变量', () => {
 
     await handleProcess(ctxWith(fetchSpy, inserted), { sourceId: 's1', item: ITEM as never });
     expect(spy, '融资新闻应在 L1 判负，不该花 L2 的钱').not.toHaveBeenCalled();
+  });
+});
+
+describe('discover 任务的重复锚点收敛', () => {
+  it('同一 externalId 只排一次，并保留第一个标题锚', () => {
+    const first = { ...ITEM, title: '真正的文章标题' } as never;
+    const excerpt = { ...ITEM, title: '卡片里的摘要文字' } as never;
+
+    expect(uniqueDiscoveredItems([first, excerpt])).toEqual([first]);
   });
 });

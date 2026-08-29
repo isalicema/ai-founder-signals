@@ -13,7 +13,7 @@
 **它不是内容站，是 `collection-manager` 的前置漏斗。**
 
 ```
-🤖 自动探测（14 个信源）  →  📰 Feed 扫一遍  →  🔖 标「深看」
+🤖 自动探测（17 个信源）  →  📰 Feed 扫一遍  →  🔖 标「深看」
                                                     ↓
                           Obsidian 收藏夹  ←  collection-manager 深度分析
 ```
@@ -32,8 +32,8 @@
 
 | | |
 |---|---|
-| 提交数 / 测试 | 29 / 149 全绿 |
-| 信源 | 17 个录入，17 个启用，**14 个当前可跑** |
+| 测试 | 166 全绿 |
+| 信源 | 17 个录入，17 个启用，**17 个当前可跑** |
 | 部署 | 本地 launchd（不是 GitHub Actions，原因见 §4.6） |
 | 成本 | **约 $1/月**（DeepSeek）+ Supabase 免费档 |
 
@@ -50,7 +50,7 @@ scripts/afs build    # 改完代码后重建网页
 |---|---|---|
 | YouTube | 8 | ✅ 可跑 |
 | 播客（小宇宙） | 3 | ✅ 可跑（用 show notes，见 §4.5） |
-| HTML（晚点 / 品玩 / AI 闹） | 3 | ⏳ 等 `HtmlAdapter`，spec 已备 |
+| HTML（晚点 / 品玩 / AI 闹） | 3 | ✅ 可跑；11 / 38 / 4 个标题锚真源冒烟通过 |
 | JSON API（Founder Park / 暗涌 / Z Potentials） | 3 | ✅ 可跑；6 / 20 / 20 条真源冒烟通过 |
 
 ---
@@ -214,7 +214,7 @@ MVP 只实现 §4.1 的首页卡片流。**
 |---|---|
 | **Alice** | 产品判断、内容品味、信源选择、最终裁决 |
 | **妙蛙种子** | 架构、准入判定、LLM 层、部署、GitHub 提交把关 |
-| **星子** | M1-M5 + `JsonApiAdapter` 已交付；下一步 `HtmlAdapter`（spec 已备） |
+| **星子** | M1-M5 + `JsonApiAdapter` + `HtmlAdapter` 已交付；17 个信源均有适配器 |
 | **RabbitT** | 立项书、主题体系、评测样本；待同步 §4.2 的准入标准变更 |
 
 ---
@@ -225,7 +225,7 @@ MVP 只实现 §4.1 的首页卡片流。**
 |---|---|
 | `docs/HANDOFF.md` | 给星子的工程交接：接口、红线、部署踩坑 |
 | `docs/SPEC-JsonApiAdapter.md` | 已完成的通用 JSON API 适配器（3 个真源配置） |
-| `docs/SPEC-HtmlAdapter.md` | 再下一个（3 个信源，含真实页面 fixture） |
+| `docs/SPEC-HtmlAdapter.md` | 已完成的通用 HTML 适配器（3 个真源 + 真实页面 fixture） |
 | `.github/workflows/diagnose.yml` | 云端环境体检——本地测不出的问题跑它，别猜 |
 | 架构文档 v2.1 | `~/Smart Workspace/Machiwhale Studio/Project/` |
 | 立项书 | 同上（RabbitT 维护） |

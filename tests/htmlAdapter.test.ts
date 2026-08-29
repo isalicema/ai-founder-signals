@@ -22,6 +22,8 @@ describe('HtmlAdapter', () => {
     expect(items.every((item) => /^https:\/\/example\.com\/news\/dj_detail\?id=\d+$/.test(item.url))).toBe(true);
     expect(items.every((item) => item.title.length >= 8)).toBe(true);
     expect(items.some((item) => item.title.startsWith('['))).toBe(false);
+    expect(items.some((item) => item.title.includes('\n'))).toBe(false);
+    expect(items.find((item) => item.externalId === '3366')?.title).toBe('对话与爱为舞张怀亭：大哥创业不走弯路');
     expect(items.some((item) => item.url.includes('/websites/'))).toBe(false);
   });
 
@@ -32,6 +34,7 @@ describe('HtmlAdapter', () => {
     expect(items.every((item) => item.url.startsWith('https://example.com/zh/ainow/'))).toBe(true);
     expect(items.every((item) => item.title.length >= 8)).toBe(true);
     expect(items.some((item) => item.title.startsWith('['))).toBe(false);
+    expect(items.some((item) => item.title.includes('\n'))).toBe(false);
     expect(items.some((item) => /[?&]ap=|\/zh\/(?:about|legal)/.test(item.url))).toBe(false);
   });
 
@@ -42,6 +45,7 @@ describe('HtmlAdapter', () => {
     expect(items.every((item) => /^https:\/\/www\.pingwest\.com\/a\/\d+$/.test(item.url))).toBe(true);
     expect(items.every((item) => item.title.length >= 8)).toBe(true);
     expect(items.some((item) => item.title.startsWith('['))).toBe(false);
+    expect(items.some((item) => item.title.includes('\n'))).toBe(false);
     expect(items.some((item) => /\/(?:w|tag|user)\//.test(item.url))).toBe(false);
   });
 

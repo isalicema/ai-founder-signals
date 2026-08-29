@@ -21,6 +21,10 @@ export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"
 
 cd "$PROJECT" || { echo "找不到项目目录 $PROJECT"; exit 1; }
 
+# Let’s Encrypt 的新 Root YR 尚未进入 Node 自带信任库。个别站点又漏发了
+# YR-by-X1 交叉证书；只给 worker 补官方交叉链，绝不关闭 TLS 校验。
+export NODE_EXTRA_CA_CERTS="$PROJECT/certs/letsencrypt-root-yr-by-x1.pem"
+
 echo "───────── $(date '+%Y-%m-%d %H:%M:%S') 开始 ─────────"
 command -v node >/dev/null || { echo "❌ 找不到 node"; exit 1; }
 command -v yt-dlp >/dev/null || echo "⚠️ 找不到 yt-dlp，YouTube 字幕会取不到"
