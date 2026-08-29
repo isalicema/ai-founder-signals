@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  useEffect,
   useMemo,
   useReducer,
   useState,
@@ -59,18 +60,35 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
   const [items, dispatch] = useReducer(applyLocalFeedAction, payload.items);
   const [filters, setFilters] = useState<FeedFilters>(EMPTY_FILTERS);
   const [notice, setNotice] = useState('');
+  const [readUndoIds, setReadUndoIds] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
   const options = useMemo(() => feedOptions(items), [items]);
   const stats = useMemo(() => feedStats(items), [items]);
   const { visible, folded } = useMemo(() => splitFeed(items, filters), [items, filters]);
   const activeFilters = Object.values(filters).filter(Boolean).length;
+  const scopedItems = useMemo(() => [...visible, ...folded], [visible, folded]);
+  const scopedUnreadIds = useMemo(
+    () => scopedItems.filter((item) => !item.readAt).map((item) => item.id),
+    [scopedItems],
+  );
   const generatedAt = new Date(payload.generatedAt);
+
+  useEffect(() => {
+    if (!notice || isPending) return;
+    const dismissAfterMs = readUndoIds.length > 0 ? 8_000 : 4_000;
+    const timeout = window.setTimeout(() => {
+      setNotice('');
+      setReadUndoIds([]);
+    }, dismissAfterMs);
+    return () => window.clearTimeout(timeout);
+  }, [isPending, notice, readUndoIds.length]);
 
   const updateFilter = <Key extends keyof FeedFilters>(key: Key, value: FeedFilters[Key]) => {
     setFilters((current) => ({ ...current, [key]: value }));
   };
 
   const act = (action: FeedItemAction, successMessage: string) => {
+    setReadUndoIds([]);
     dispatch(action);
     setNotice(successMessage);
     startTransition(async () => {
@@ -82,6 +100,48 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
   };
 
   const actionAt = () => new Date().toISOString();
+
+  const markScopeRead = () => {
+    if (scopedUnreadIds.length === 0) return;
+    const itemIds = scopedUnreadIds;
+    const successMessage = activeFilters
+      ? `已将筛选中的 ${itemIds.length} 条标为已阅`
+      : `已将 ${itemIds.length} 条标为已阅`;
+    const action: FeedItemAction = { type: 'set_items_read', itemIds, readAt: actionAt() };
+    dispatch(action);
+    setReadUndoIds(itemIds);
+    setNotice(successMessage);
+    startTransition(async () => {
+      const result = await applyFeedAction(action);
+      if (!result.ok) setNotice('已在本页标为已阅，但写库失败；可撤销后重试');
+      else if (!result.persisted) setNotice(`${successMessage} · 当前为安全预览，尚未写库`);
+      else setNotice(`${successMessage} · 已写入`);
+    });
+  };
+
+  const undoMarkScopeRead = () => {
+    if (readUndoIds.length === 0 || isPending) return;
+    const itemIds = readUndoIds;
+    const successMessage = `已撤销 ${itemIds.length} 条已阅`;
+    const action: FeedItemAction = { type: 'set_items_read', itemIds, readAt: null };
+    dispatch(action);
+    setReadUndoIds([]);
+    setNotice(successMessage);
+    startTransition(async () => {
+      const result = await applyFeedAction(action);
+      if (!result.ok) setNotice('本页已撤销，但数据库恢复失败；刷新前请重试');
+      else if (!result.persisted) setNotice(`${successMessage} · 当前为安全预览`);
+      else setNotice(`${successMessage} · 已写入`);
+    });
+  };
+
+  const markReadLabel = scopedUnreadIds.length === 0
+    ? '已全部阅完'
+    : activeFilters
+      ? `将筛选中的 ${scopedUnreadIds.length} 条标为已阅`
+      : scopedUnreadIds.length === scopedItems.length
+        ? `全部 ${scopedItems.length} 条标为已阅`
+        : `将剩余 ${scopedUnreadIds.length} 条标为已阅`;
 
   return (
     <main className="feed-shell">
@@ -172,7 +232,20 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
               <span className="section-kicker">02 / SIGNAL STREAM</span>
               <h2 id="stream-title">值得先看的</h2>
             </div>
-            <span className="result-count">{visible.length.toString().padStart(2, '0')} 条</span>
+            <div className="stream-tools">
+              <span className="result-count">{visible.length.toString().padStart(2, '0')} 条</span>
+              <button
+                className="mark-read-button"
+                type="button"
+                disabled={scopedUnreadIds.length === 0 || isPending}
+                aria-label={markReadLabel}
+                onClick={markScopeRead}
+              >
+                <span aria-hidden="true">✓</span>
+                <span className="mark-read-label-wide">{markReadLabel}</span>
+                <span className="mark-read-label-compact">全部已阅</span>
+              </button>
+            </div>
           </div>
 
           {visible.length > 0 ? (
@@ -205,7 +278,10 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
                 <strong>还有 {folded.length} 条低分内容</strong>
                 <small>没有丢弃，只是折叠。展开后仍可恢复高亮。</small>
               </span>
-              <span className="folded-action">展开查看</span>
+              <span className="folded-action">
+                <span className="folded-action-open">展开查看</span>
+                <span className="folded-action-close">收起</span>
+              </span>
             </summary>
             <div className="folded-list">
               {folded.length > 0 ? folded.map((item) => (
@@ -240,7 +316,15 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
       <div className={`toast ${notice ? 'is-visible' : ''}`} role="status" aria-live="polite">
         <span className={`toast-dot ${isPending ? 'toast-pulse pulse' : ''}`} aria-hidden="true" />
         {notice}
-        {notice && <button type="button" onClick={() => setNotice('')} aria-label="关闭状态提示">×</button>}
+        {readUndoIds.length > 0 && (
+          <button
+            className="toast-undo"
+            type="button"
+            disabled={isPending}
+            onClick={undoMarkScopeRead}
+          >撤销</button>
+        )}
+        {notice && <button className="toast-close" type="button" onClick={() => { setNotice(''); setReadUndoIds([]); }} aria-label="关闭状态提示">×</button>}
       </div>
     </main>
   );

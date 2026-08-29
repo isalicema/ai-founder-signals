@@ -514,6 +514,57 @@ summary:focus-visible {
   letter-spacing: 0.1em;
 }
 
+.stream-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 3px;
+}
+
+.stream-tools .result-count {
+  padding-bottom: 0;
+}
+
+.mark-read-button {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 7px;
+  padding: 0 11px;
+  border: 1px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease, opacity 160ms ease;
+}
+
+.mark-read-button > span:first-child {
+  color: var(--signal-dark);
+}
+
+.mark-read-button:hover:not(:disabled) {
+  background: var(--ink);
+  color: var(--paper-bright);
+}
+
+.mark-read-button:hover:not(:disabled) > span:first-child {
+  color: var(--signal);
+}
+
+.mark-read-button:disabled {
+  border-color: var(--line);
+  color: var(--ink-soft);
+  cursor: default;
+  opacity: 0.65;
+}
+
+.mark-read-label-compact {
+  display: none;
+}
+
 .cards {
   display: grid;
   gap: 18px;
@@ -1136,6 +1187,18 @@ summary:focus-visible {
   letter-spacing: 0.08em;
 }
 
+.folded-action-close {
+  display: none;
+}
+
+.folded-drawer[open] .folded-action-open {
+  display: none;
+}
+
+.folded-drawer[open] .folded-action-close {
+  display: inline;
+}
+
 .folded-list {
   border-top: 1px solid var(--line-dark);
 }
@@ -1312,6 +1375,30 @@ summary:focus-visible {
   font-size: 1rem;
 }
 
+.toast .toast-undo {
+  width: auto;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid rgba(250, 248, 240, 0.48);
+  color: var(--paper-bright);
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.toast .toast-undo:hover:not(:disabled) {
+  background: var(--paper-bright);
+  color: var(--ink);
+}
+
+.toast .toast-undo:disabled {
+  cursor: wait;
+  opacity: 0.45;
+}
+
+.toast .toast-close {
+  margin-left: 0;
+}
+
 @keyframes card-in {
   from {
     opacity: 0;
@@ -1486,6 +1573,30 @@ summary:focus-visible {
 
   .stream-heading h2 {
     font-size: 2.7rem;
+  }
+
+  .stream-heading {
+    gap: 12px;
+  }
+
+  .stream-tools {
+    align-items: flex-end;
+    flex-direction: column;
+    gap: 6px;
+    padding-bottom: 0;
+  }
+
+  .mark-read-button {
+    min-height: 30px;
+    padding-inline: 9px;
+  }
+
+  .mark-read-label-wide {
+    display: none;
+  }
+
+  .mark-read-label-compact {
+    display: inline;
   }
 
   .signal-card {

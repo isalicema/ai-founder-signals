@@ -1,0 +1,49 @@
+#!/bin/zsh
+# AI Founder Signals 控制台
+#   afs status | run | web | logs | open | stop | start
+set -u
+PROJECT="$HOME/Projects/ai-founder-signals"
+W=com.machiwhale.afs.worker
+S=com.machiwhale.afs.web
+GUI="gui/$(id -u)"
+
+case "${1:-status}" in
+  status)
+    echo "── 服务 ──"
+    for l in $W $S; do
+      if launchctl print "$GUI/$l" >/dev/null 2>&1; then
+        last=$(launchctl print "$GUI/$l" 2>/dev/null | sed -n "s/.*last exit code = \(.*\)/\1/p" | head -1)
+        echo "  ✅ $l  上次退出码 ${last:-—}"
+      else
+        echo "  ❌ $l  未加载"
+      fi
+    done
+    echo "── 网页 ──"
+    curl -s -o /dev/null -m 3 -w "  localhost:3000 → HTTP %{http_code}\n" http://localhost:3000 || echo "  localhost:3000 → 未响应"
+    echo "── 数据 ──"
+    cd "$PROJECT" && npx tsx tools/dbCheck.ts 2>/dev/null | grep -E "信源|待跑|已收录" | sed 's/^/  /'
+    ;;
+  run)   cd "$PROJECT" && exec ./scripts/run-worker.sh ;;
+  build) cd "$PROJECT" && npm run build && launchctl kickstart -k "$GUI/$S" && echo "已重建并重启网页服务" ;;
+  web)   launchctl kickstart -k "$GUI/$S" && echo "网页服务已重启" ;;
+  logs)  tail -f ~/Library/Logs/afs-worker.log ;;
+  open)  open http://localhost:3000 ;;
+  start)
+    launchctl bootstrap "$GUI" ~/Library/LaunchAgents/$W.plist 2>/dev/null
+    launchctl bootstrap "$GUI" ~/Library/LaunchAgents/$S.plist 2>/dev/null
+    echo "已加载" ;;
+  stop)
+    launchctl bootout "$GUI/$W" 2>/dev/null
+    launchctl bootout "$GUI/$S" 2>/dev/null
+    echo "已卸载" ;;
+  *) echo "用法: afs [status|run|build|web|logs|open|start|stop]
+
+  status  服务与数据概况
+  run     立刻跑一次 worker（不等 06:00）
+  build   改完代码后重建网页并重启
+  web     只重启网页服务
+  logs    跟踪 worker 日志
+  open    打开 localhost:3000
+  start   加载两个 launchd 服务
+  stop    卸载" ;;
+esac

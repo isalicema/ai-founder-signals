@@ -1,10 +1,15 @@
 name: worker
 
+# ⚠️ 定时已停用，改为本地 launchd 每天 06:00 跑。
+#
+# 原因（2026-08-29 实测）：YouTube 拦截数据中心 IP，Actions runner 上
+# yt-dlp 直接报 "Sign in to confirm you're not a bot"，取不到任何字幕。
+# 11 个可跑信源里 8 个是 YouTube，云端跑出来只剩标题卡，
+# 「Mac 没开也能跑」换来的是个降级 feed，不划算。
+#
+# 保留 workflow_dispatch：数据库和 DeepSeek 在云端都是通的，
+# 需要时可以手动触发跑非 YouTube 的部分（播客/文章）。
 on:
-  schedule:
-    # 北京时间每天 06:00 = UTC 22:00（前一天）。
-    # 这个时间也刚好落在 DeepSeek 的平峰计价档（高峰是 UTC 01-04 与 06-10 工作日）。
-    - cron: '0 22 * * *'
   workflow_dispatch:
     inputs:
       max_jobs:

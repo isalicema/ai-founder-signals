@@ -200,3 +200,37 @@ enqueueDailyDiscover  每个启用信源一个 discover 任务（key 带日期�
 `item` 表没有 `user_signal` 列，rescore 从 `tier_score` 重算 tier 会抹掉 Alice
 手动点的 👍👎。要么加回该列并让 rescore 跳过，要么让 rescore 查 `feedback`
 最新信号。**这是我压表时删掉那列留下的坑，别在没定规则前实现 rescore。**
+
+---
+
+## 部署：本地 launchd（不用 GitHub Actions）
+
+```
+scripts/run-worker.sh   每日 worker（launchd 06:00 调起）
+scripts/run-web.sh      feed 网页常驻 localhost:3000
+scripts/afs             控制台：status / run / build / web / logs / open / start / stop
+~/Library/LaunchAgents/com.machiwhale.afs.{worker,web}.plist
+~/Library/Logs/afs-{worker,web}.log
+```
+
+### 为什么不用 Actions
+
+2026-08-29 实测：**YouTube 拦截数据中心 IP**，Actions runner 上 yt-dlp 直接报
+`Sign in to confirm you're not a bot`，一条字幕都取不到。11 个可跑信源里 8 个是
+YouTube，云端跑出来只剩标题卡——「Mac 没开也能跑」换来的是个降级 feed。
+
+云端其余部分都是通的（数据库经 Session pooler、DeepSeek HTTP 200），
+所以 `worker.yml` 保留手动触发，定时停用。诊断脚本在 `.github/workflows/diagnose.yml`。
+
+⚠️ **不要为此给 yt-dlp 配 cookies 或代理**——那是绕过反爬，我们在 36氪、
+知乎已经划过这条线，不该对 YouTube 破例。
+
+### 三个踩过的坑，别再踩
+
+1. **plist 里不要写死 nvm 的版本路径**（`.nvm/versions/node/v24.19.0/bin/node`）——
+   升级 node 就断。包装脚本里 source nvm.sh 动态解析。
+2. **构建不要放进被 KeepAlive 守护的进程**。构建一旦被重启打断就永远完不成，
+   形成「构建→被杀→重启→再构建」的循环。实测踩过。改代码后用 `afs build`。
+3. **判断有没有生产构建要看 `.next/BUILD_ID`，不是 `.next` 目录**——
+   `next dev` 也会写 `.next` 但结构不同，`next start` 起不来，
+   表现为「进程活着、端口不响应」，很难看出原因。

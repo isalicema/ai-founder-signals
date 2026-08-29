@@ -70,6 +70,24 @@ describe('M5 feed model', () => {
     expect(refs.every((entity) => entity.starred)).toBe(true);
   });
 
+  it('marks a scoped batch as read and restores only that batch on undo', () => {
+    const itemIds = demo.filter((item) => !item.readAt).slice(0, 3).map((item) => item.id);
+    const marked = applyLocalFeedAction(demo, {
+      type: 'set_items_read',
+      itemIds,
+      readAt: now.toISOString(),
+    });
+    expect(marked.filter((item) => itemIds.includes(item.id)).every((item) => item.readAt === now.toISOString())).toBe(true);
+    expect(marked.filter((item) => !itemIds.includes(item.id))).toEqual(demo.filter((item) => !itemIds.includes(item.id)));
+
+    const restored = applyLocalFeedAction(marked, {
+      type: 'set_items_read',
+      itemIds,
+      readAt: null,
+    });
+    expect(restored.filter((item) => itemIds.includes(item.id)).every((item) => item.readAt === null)).toBe(true);
+  });
+
   it('builds deduplicated filter options', () => {
     const options = feedOptions(demo);
     expect(options.tags).toContain('产品与用户');

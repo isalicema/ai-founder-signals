@@ -70,6 +70,9 @@ export function applyLocalFeedAction(items: FeedItemView[], action: FeedItemActi
         )),
       };
     }
+    if (action.type === 'set_items_read') {
+      return action.itemIds.includes(item.id) ? { ...item, readAt: action.readAt } : item;
+    }
     if (item.id !== action.itemId) return item;
     switch (action.type) {
       case 'opened_source':
