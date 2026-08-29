@@ -169,7 +169,20 @@ simhash 去重从原理上挡不住，只能在展示层聚类：
 代表条目取**段落最长**的那条（切片里内容最全的一段最能说明这场讲了什么）。
 「值得先看的 N 场」也跟着数场，否则会出现「说 9 条、只看到 5 张卡」的错位。
 
-### 4.10 网页进程共用一条数据库连接池
+### 4.10 晚点的证书链要补一张根证书
+
+晚点 LatePost 的证书由 Let's Encrypt 2025 年的新中间证书 `YR1` 签发，其根
+`ISRG Root YR` 还没进 Node 24 的 CA 列表，也不在 macOS 钥匙串里。
+Node 直接 `UNABLE_TO_GET_ISSUER_CERT_LOCALLY`，而 curl 能通（会自动补链）——
+**这类「curl 行、代码不行」的差异很容易被误判成反爬**。
+
+解法是 `NODE_EXTRA_CA_CERTS` 指向交叉签名版本（由 Node 已信任的 ISRG Root X1
+签发），校验全程开着。⚠️ **不要用 `NODE_TLS_REJECT_UNAUTHORIZED=0` 或按域名放行**
+——那才是真妥协，而且会掩盖将来真实的证书问题。
+
+`tools/chkCerts.ts` 用来判断这份证书还需不需要；Node 收录新根后就能删。
+
+### 4.11 网页进程共用一条数据库连接池
 
 原先 `loadFeed` / `applyFeedAction` 每次请求都 create → query → close。
 数据库在新加坡、还要走代理出去，每次请求重新做 TCP + TLS 握手——

@@ -52,6 +52,8 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           AFS_LLM_PROVIDER: deepseek
+          # 见 certs/README.md：补全 Let's Encrypt 新根的信任链，不是关校验
+          NODE_EXTRA_CA_CERTS: ${{ github.workspace }}/certs/isrg-root-yr-by-x1.pem
           NODE_EXTRA_CA_CERTS: ${{ github.workspace }}/certs/letsencrypt-root-yr-by-x1.pem
         run: |
           set -o pipefail
