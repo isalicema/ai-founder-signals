@@ -1,6 +1,6 @@
 # 额外信任的根证书
 
-## isrg-root-yr-by-x1.pem
+## letsencrypt-root-yr-by-x1.pem
 
 **为什么需要**：晚点 LatePost 的证书由 Let's Encrypt 2025 年的新中间证书 `YR1` 签发，
 而 `YR1` 的根是 `ISRG Root YR`——Node 24 自带的 CA 列表和 macOS 钥匙串都还没收录它。

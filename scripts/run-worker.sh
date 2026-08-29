@@ -21,10 +21,6 @@ export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"
 
 cd "$PROJECT" || { echo "找不到项目目录 $PROJECT"; exit 1; }
 
-# 晚点 LatePost 的证书链需要 Let's Encrypt 的新根（Node 自带 CA 尚未收录）。
-# 详见 certs/README.md——这是补全信任链，不是关掉校验。
-export NODE_EXTRA_CA_CERTS="$PROJECT/certs/isrg-root-yr-by-x1.pem"
-
 
 # Let’s Encrypt 的新 Root YR 尚未进入 Node 自带信任库。个别站点又漏发了
 # YR-by-X1 交叉证书；只给 worker 补官方交叉链，绝不关闭 TLS 校验。
