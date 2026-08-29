@@ -54,14 +54,37 @@ describe('管线错误码可定位（实测回归）', () => {
   });
 });
 
-describe('发现期截止（实测回归）', () => {
-  it('默认 7 天，env 可覆盖', async () => {
-    const { discoveryMaxAgeDays } = await import('../src/worker/handlers.js');
-    expect(discoveryMaxAgeDays()).toBe(7);
-    vi.stubEnv('AFS_DISCOVERY_MAX_AGE_DAYS', '30');
-    expect(discoveryMaxAgeDays()).toBe(30);
-    vi.stubEnv('AFS_DISCOVERY_MAX_AGE_DAYS', '不是数字');
-    expect(discoveryMaxAgeDays()).toBe(7);   // 脏值回落默认，不崩
+describe('增量发现：只看「今天」（实测回归）', () => {
+  it('⭐ 有上次检查时间 → 窗口从那时算起，不是固定回溯 N 天', async () => {
+    const { discoveryCutoff } = await import('../src/worker/handlers.js');
+    const last = new Date('2026-08-28T22:00:00Z');
+    const cutoff = discoveryCutoff(last, new Date('2026-08-29T22:00:00Z'));
+    // 上次检查往前留 12 小时重叠，兜住迟到内容
+    expect(cutoff.toISOString()).toBe('2026-08-28T10:00:00.000Z');
+  });
+
+  it('首次检查某信源 → 只回溯 1 天', async () => {
+    const { discoveryCutoff } = await import('../src/worker/handlers.js');
+    const now = new Date('2026-08-29T22:00:00Z');
+    expect(discoveryCutoff(null, now).toISOString()).toBe('2026-08-28T22:00:00.000Z');
+  });
+
+  it('初始窗口可用 env 调整，脏值回落默认不崩', async () => {
+    const { firstRunWindowDays } = await import('../src/worker/handlers.js');
+    expect(firstRunWindowDays()).toBe(1);
+    vi.stubEnv('AFS_FIRST_RUN_DAYS', '3');
+    expect(firstRunWindowDays()).toBe(3);
+    vi.stubEnv('AFS_FIRST_RUN_DAYS', '不是数字');
+    expect(firstRunWindowDays()).toBe(1);
     vi.unstubAllEnvs();
+  });
+
+  it('⭐ 每天跑一次时，窗口天然只覆盖这一天的新增', async () => {
+    const { discoveryCutoff } = await import('../src/worker/handlers.js');
+    const yesterdayRun = new Date('2026-08-28T22:00:00Z');
+    const todayRun = new Date('2026-08-29T22:00:00Z');
+    const cutoff = discoveryCutoff(yesterdayRun, todayRun);
+    const spanHours = (todayRun.getTime() - cutoff.getTime()) / 3_600_000;
+    expect(spanHours).toBe(36);   // 24 小时 + 12 小时重叠，重叠由 external_id 去重
   });
 });

@@ -55,11 +55,16 @@ export async function handleDiscover(
   }
 
   // ⚠️ 信源固定返回「最近 15 条」，不管这 15 条跨多久。实测首轮 165 条里
-  //    62 条超过 30 天、最早回溯到四个月前——全量处理既花钱，又把
-  //    「今天有什么新东西」这个产品前提淹掉。
-  //    没有日期的条目放行（HtmlAdapter 拿不到发布时间，见其 spec §2.4）。
-  const cutoff = Date.now() - discoveryMaxAgeDays() * 24 * 60 * 60 * 1000;
-  const recent = found.filter((i) => !i.publishedAt || i.publishedAt.getTime() >= cutoff);
+  //    62 条超过 30 天、最早回溯到四个月前。
+  //
+  //    Alice 的用法是「只看今天」，所以窗口不是固定回溯 N 天，而是
+  //    **上次检查之后的新内容**——这才是「每天打开看新增」的准确表达。
+  //    首次检查该信源时没有上次时间可用，退回一个很窄的初始窗口。
+  //
+  //    没有日期的条目放行（HtmlAdapter 拿不到发布时间，见其 spec §2.4——
+  //    那边宁可留 null 也不猜日期，这边就不能因为 null 把它们全丢掉）。
+  const cutoff = discoveryCutoff(source.lastCheckedAt);
+  const recent = found.filter((i) => !i.publishedAt || i.publishedAt.getTime() >= cutoff.getTime());
   const tooOld = found.length - recent.length;
 
   const seen = await existingExternalIds(ctx.db, source.id, recent.map((i) => i.externalId));
@@ -75,10 +80,22 @@ export async function handleDiscover(
   return { found: found.length, enqueued: fresh.length, tooOld };
 }
 
-/** 默认只看最近 7 天。历史内容不是这个产品的用途——要回溯用检索，不用 feed。 */
-export function discoveryMaxAgeDays(): number {
-  const raw = Number(process.env.AFS_DISCOVERY_MAX_AGE_DAYS);
-  return Number.isFinite(raw) && raw > 0 ? raw : 7;
+/** 首次检查某信源时的初始窗口，默认 1 天——只要「今天」。 */
+export function firstRunWindowDays(): number {
+  const raw = Number(process.env.AFS_FIRST_RUN_DAYS);
+  return Number.isFinite(raw) && raw > 0 ? raw : 1;
+}
+
+/**
+ * 回看重叠。cron 抖动、信源延迟发布、时区边界都可能让内容「迟到」，
+ * 窗口卡死在上次检查时刻会漏掉它们。重叠部分由 external_id 去重兜住，
+ * 不会重复处理，所以这里可以放宽一点。
+ */
+const OVERLAP_MS = 12 * 60 * 60 * 1000;
+
+export function discoveryCutoff(lastCheckedAt: Date | null, now = new Date()): Date {
+  if (lastCheckedAt) return new Date(lastCheckedAt.getTime() - OVERLAP_MS);
+  return new Date(now.getTime() - firstRunWindowDays() * 24 * 60 * 60 * 1000);
 }
 
 /* ────────────────────────── process ────────────────────────── */
