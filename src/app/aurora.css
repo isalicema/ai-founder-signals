@@ -1524,3 +1524,273 @@ html[data-skin="aurora"] .skin-switcher button[aria-pressed="true"] {
     left: 24px;
   }
 }
+
+/* ---------- 同场切片：附着在主卡下方的轻量信号托盘 ---------- */
+
+html[data-skin="aurora"] .clip-group {
+  margin: -7px 14px 0;
+  padding-top: 7px;
+  border: 1px solid var(--glass-line);
+  border-top: 0;
+  border-radius: 0 0 20px 20px;
+  background: rgba(255, 255, 255, 0.48);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px) saturate(1.25);
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+}
+
+html[data-skin="aurora"] .clip-group > summary {
+  min-height: 54px;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 0 14px 0 8px;
+  border-top: 1px solid rgba(76, 93, 245, 0.11);
+  border-radius: 0 0 18px 18px;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+html[data-skin="aurora"] .clip-group[open] > summary {
+  border-radius: 0;
+}
+
+html[data-skin="aurora"] .clip-group-mark {
+  align-self: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(76, 93, 245, 0.15);
+  border-radius: 13px;
+  background: linear-gradient(145deg, rgba(76, 93, 245, 0.13), rgba(139, 92, 246, 0.08));
+  color: var(--accent-deep);
+}
+
+html[data-skin="aurora"] .clip-group-mark strong {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+html[data-skin="aurora"] .clip-group-mark small {
+  color: var(--ink-soft);
+  font-family: var(--mono);
+  font-size: 0.42rem;
+  font-weight: 600;
+}
+
+html[data-skin="aurora"] .clip-group-copy > strong {
+  font-family: var(--display);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+html[data-skin="aurora"] .clip-group-copy > small {
+  color: var(--ink-soft);
+  font-family: var(--mono);
+  font-size: 0.54rem;
+  font-weight: 500;
+}
+
+html[data-skin="aurora"] .clip-group-action {
+  color: var(--accent-deep);
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+html[data-skin="aurora"] .clip-group-action i {
+  width: 28px;
+  height: 28px;
+  border-color: rgba(76, 93, 245, 0.25);
+  background: rgba(76, 93, 245, 0.08);
+}
+
+html[data-skin="aurora"] .clip-group > summary:hover .clip-group-action i {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+html[data-skin="aurora"] .clip-list {
+  gap: 8px;
+  padding: 10px;
+  border-top-color: rgba(22, 22, 46, 0.07);
+  border-radius: 0 0 19px 19px;
+  background: rgba(242, 243, 250, 0.38);
+}
+
+html[data-skin="aurora"] .conversation-clip {
+  grid-template-columns: 68px minmax(0, 1fr);
+  border: 1px solid var(--glass-line);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: 0 8px 24px -18px rgba(31, 35, 90, 0.35);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+}
+
+html[data-skin="aurora"] .conversation-clip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px -18px rgba(31, 35, 90, 0.42);
+}
+
+html[data-skin="aurora"] .clip-cover {
+  margin: 7px;
+  min-height: calc(100% - 14px);
+  padding: 8px 7px;
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 80% 15%, rgba(255, 255, 255, 0.38) 0 2px, transparent 3px),
+    linear-gradient(155deg, var(--cover-a), var(--cover-b));
+  color: var(--cover-ink, #fff);
+}
+
+html[data-skin="aurora"] .clip-cover[style] {
+  background-image:
+    linear-gradient(180deg, rgba(33, 40, 132, 0.03), rgba(22, 22, 46, 0.58)),
+    var(--cover-image);
+}
+
+html[data-skin="aurora"] .clip-cover::after {
+  right: -65%;
+  background: rgba(255, 255, 255, 0.38);
+}
+
+html[data-skin="aurora"] .clip-cover span {
+  font-family: var(--mono);
+  font-size: 0.43rem;
+  font-weight: 600;
+}
+
+html[data-skin="aurora"] .clip-cover strong {
+  font-family: var(--display);
+  font-size: 1.45rem;
+  font-weight: 700;
+}
+
+html[data-skin="aurora"] .clip-body {
+  padding: 11px 13px 10px 6px;
+}
+
+html[data-skin="aurora"] .clip-position,
+html[data-skin="aurora"] .clip-unread {
+  color: var(--ink-soft);
+  font-family: var(--mono);
+  font-size: 0.49rem;
+  font-weight: 600;
+}
+
+html[data-skin="aurora"] .clip-unread { color: var(--accent-deep); }
+
+html[data-skin="aurora"] .clip-unread::before {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(76, 93, 245, 0.12);
+}
+
+html[data-skin="aurora"] .clip-title h4 {
+  margin-bottom: 4px;
+  font-family: var(--display);
+  font-size: clamp(0.93rem, 1.45vw, 1.08rem);
+  font-weight: 700;
+  letter-spacing: -0.018em;
+  line-height: 1.2;
+}
+
+html[data-skin="aurora"] .clip-title:hover h4 { color: var(--accent-deep); }
+
+html[data-skin="aurora"] .clip-metadata p {
+  color: var(--ink-soft);
+  font-family: var(--mono);
+  font-size: 0.51rem;
+}
+
+html[data-skin="aurora"] .clip-metadata p:first-child { color: var(--ink); }
+html[data-skin="aurora"] .clip-metadata p:first-child > span { color: var(--accent); }
+
+html[data-skin="aurora"] .clip-summary {
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: 7px 10px;
+  border-left: 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(76, 93, 245, 0.08), rgba(139, 92, 246, 0.055));
+}
+
+html[data-skin="aurora"] .clip-summary.is-empty { background: rgba(22, 22, 46, 0.04); }
+
+html[data-skin="aurora"] .clip-summary strong {
+  color: var(--accent-ink);
+  font-size: 0.56rem;
+}
+
+html[data-skin="aurora"] .clip-summary p {
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+
+html[data-skin="aurora"] .clip-actions > a,
+html[data-skin="aurora"] .clip-actions > button {
+  min-height: 27px;
+  padding: 0 9px;
+  border-color: rgba(22, 22, 46, 0.11);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.52);
+  color: var(--ink-soft);
+  font-family: var(--mono);
+  font-size: 0.52rem;
+  font-weight: 600;
+}
+
+html[data-skin="aurora"] .clip-actions > a:hover,
+html[data-skin="aurora"] .clip-actions > button:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: rgba(76, 93, 245, 0.1);
+  color: var(--accent-deep);
+}
+
+html[data-skin="aurora"] .clip-actions > button.is-active {
+  border-color: rgba(168, 198, 14, 0.45);
+  background: var(--lime);
+  color: var(--ink);
+}
+
+html[data-skin="aurora"] .clip-actions > .clip-icon-action {
+  width: 28px;
+  min-width: 28px;
+  padding: 0;
+}
+
+@media (max-width: 640px) {
+  html[data-skin="aurora"] .clip-group {
+    margin-inline: 8px;
+    border-radius: 0 0 17px 17px;
+  }
+
+  html[data-skin="aurora"] .clip-group > summary {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    gap: 8px;
+    padding-left: 6px;
+  }
+
+  html[data-skin="aurora"] .clip-group-mark {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+  }
+
+  html[data-skin="aurora"] .conversation-clip {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+
+  html[data-skin="aurora"] .clip-cover {
+    margin: 6px;
+    min-height: calc(100% - 12px);
+    padding: 7px 5px;
+  }
+
+  html[data-skin="aurora"] .clip-body { padding-left: 4px; }
+
+  html[data-skin="aurora"] .clip-summary {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}

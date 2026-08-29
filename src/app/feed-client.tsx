@@ -266,17 +266,33 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
                     // 同一场对话被信源切成了多段。折起来，展开才看各段。
                     <details className="clip-group">
                       <summary>
-                        <span className="clip-count">同一场对话 · 另有 {group.rest.length} 段</span>
-                        <span className="clip-open">展开</span>
-                        <span className="clip-close">收起</span>
+                        <span className="clip-group-mark" aria-hidden="true">
+                          <strong>{String(group.rest.length + 1).padStart(2, '0')}</strong>
+                          <small>SEG</small>
+                        </span>
+                        <span className="clip-group-copy">
+                          <strong>同场切片</strong>
+                          <small>
+                            主卡 + 其余 {group.rest.length} 段
+                            {' · '}
+                            {group.rest.some((clip) => !clip.readAt)
+                              ? `${group.rest.filter((clip) => !clip.readAt).length} 段未读`
+                              : '其余均已阅'}
+                          </small>
+                        </span>
+                        <span className="clip-group-action">
+                          <span className="clip-open">展开各段</span>
+                          <span className="clip-close">收起各段</span>
+                          <i aria-hidden="true">⌄</i>
+                        </span>
                       </summary>
                       <div className="clip-list">
-                        {group.rest.map((clip) => (
-                          <SignalCard
+                        {group.rest.map((clip, clipIndex) => (
+                          <ConversationClip
                             item={clip}
-                            index={-1}
+                            position={clipIndex + 2}
+                            total={group.rest.length + 1}
                             key={clip.id}
-                            onTag={(tag) => updateFilter('tag', tag)}
                             onAction={act}
                             actionAt={actionAt}
                             pending={isPending}
@@ -536,6 +552,93 @@ function SignalCard({
           <button
             type="button"
             className="icon-action"
+            aria-label="这条不相关，移入低分内容"
+            title="不相关"
+            onClick={() => onAction({ type: 'irrelevant', itemId: item.id, at: actionAt() }, '已移入低分内容')}
+          >👎</button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function ConversationClip({
+  item,
+  position,
+  total,
+  onAction,
+  actionAt,
+  pending,
+}: {
+  item: FeedItemView;
+  position: number;
+  total: number;
+  onAction: (action: FeedItemAction, message: string) => void;
+  actionAt: () => string;
+  pending: boolean;
+}) {
+  const entityNames = [...item.persons, ...item.companies];
+  const meta = factLine(item);
+
+  const recordOpened = () => onAction(
+    { type: 'opened_source', itemId: item.id, at: actionAt() },
+    '已记录打开原文',
+  );
+
+  return (
+    <article className={`conversation-clip tone-${item.coverTone} ${item.readAt ? 'is-read' : 'is-unread'}`}>
+      <div className="clip-cover" aria-hidden="true" style={coverStyle(item)}>
+        <span>{mediaMarks[item.mediaType]}</span>
+        <strong>{coverMonogram(item)}</strong>
+      </div>
+
+      <div className="clip-body">
+        <div className="clip-topline">
+          <span className="clip-position">切片 {String(position).padStart(2, '0')} / {String(total).padStart(2, '0')}</span>
+          {!item.readAt && <span className="clip-unread">未读</span>}
+        </div>
+
+        <a className="clip-title" href={item.url} target="_blank" rel="noreferrer" onClick={recordOpened}>
+          <h4>{item.title}</h4>
+        </a>
+
+        <div className="clip-metadata">
+          <p>{entityNames.length ? entityNames.join(' · ') : '尚未识别人物或公司'} <span>/</span> {item.sourceName}</p>
+          <p>{meta.map((fact) => <span key={fact}>{fact}</span>)}</p>
+        </div>
+
+        <section className={`clip-summary ${item.summary ? '' : 'is-empty'}`} aria-label="AI 摘要">
+          <strong>🤖 AI 摘要</strong>
+          <p>{item.summary ?? emptySummary(item)}</p>
+        </section>
+
+        <div className="clip-actions">
+          <a href={item.url} target="_blank" rel="noreferrer" onClick={recordOpened}><span aria-hidden="true">↗</span> 看原文</a>
+          <button
+            type="button"
+            className={item.archiveRequestedAt ? 'is-active' : ''}
+            disabled={Boolean(item.archiveRequestedAt)}
+            onClick={() => onAction({ type: 'archive_requested', itemId: item.id, at: actionAt() }, '已加入深看队列')}
+          ><span aria-hidden="true">{item.archiveRequestedAt ? '✓' : '◇'}</span> {item.archiveRequestedAt ? '已标深看' : '深看'}</button>
+          <span className="clip-action-spacer" />
+          <button
+            type="button"
+            className={`clip-icon-action ${item.tier === 'highlight' ? 'is-active' : ''}`}
+            aria-label={item.tier === 'highlight' ? '取消好内容标记' : '这是好内容，置为高亮'}
+            aria-pressed={item.tier === 'highlight'}
+            title={item.tier === 'highlight' ? '取消好内容标记' : '好内容'}
+            disabled={pending}
+            onClick={() => {
+              const highlighted = item.tier !== 'highlight';
+              onAction(
+                { type: 'set_highlight', itemId: item.id, highlighted, at: actionAt() },
+                highlighted ? '已置为高亮' : '已取消高亮',
+              );
+            }}
+          ><span className="action-glyph" aria-hidden="true">👍</span></button>
+          <button
+            type="button"
+            className="clip-icon-action"
             aria-label="这条不相关，移入低分内容"
             title="不相关"
             onClick={() => onAction({ type: 'irrelevant', itemId: item.id, at: actionAt() }, '已移入低分内容')}
