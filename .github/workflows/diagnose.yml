@@ -1,0 +1,51 @@
+name: diagnose
+
+# 云端环境体检。用来区分「本地能跑、云端不行」这一类问题——
+# IPv6 直连、YouTube 封数据中心 IP、DeepSeek 可达性，都是本地测不出来的。
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24', cache: npm }
+      - run: npm ci
+
+      - name: Install yt-dlp
+        run: |
+          sudo curl -sSL -o /usr/local/bin/yt-dlp \
+            https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux
+          sudo chmod +x /usr/local/bin/yt-dlp
+
+      - name: yt-dlp 能否取到字幕
+        id: yt
+        continue-on-error: true
+        run: |
+          # 拿一条确定有字幕的公开视频试。这里要的是**原始报错**，
+          # 不走 worker 的安全分类——诊断场景需要看到 YouTube 到底说了什么。
+          set +e
+          yt-dlp --skip-download --write-auto-subs --sub-langs 'en.*' \
+                 --sub-format vtt -o '/tmp/t.%(ext)s' \
+                 'https://www.youtube.com/watch?v=qQluNEfSVHk' 2>&1 | tail -20
+          code=$?
+          echo "exit=$code"
+          ls -la /tmp/t.* 2>/dev/null && echo "✅ 字幕文件已生成" || echo "❌ 没有字幕文件"
+          exit 0
+
+      - name: 出口 IP 与网络栈
+        run: |
+          echo "IPv4: $(curl -s -m 8 -4 https://ifconfig.co || echo 无)"
+          echo "IPv6: $(curl -s -m 8 -6 https://ifconfig.co || echo 无)"
+
+      - name: 数据库与 DeepSeek 可达性
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: |
+          npx tsx tools/dbCheck.ts || true
+          echo "DeepSeek HTTP: $(curl -s -o /dev/null -w '%{http_code}' -m 10 \
+            -H "Authorization: Bearer $DEEPSEEK_API_KEY" https://api.deepseek.com/models)"
