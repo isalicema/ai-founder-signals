@@ -16,7 +16,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          # ⚠️ 必须和实际运行环境一致（本机与 worker.yml 都是 24）。
+          #    原先是 22（npm 10），而 lock 由本机 npm 11 生成——
+          #    npm 10 解析不了 npm 11 写的嵌套结构，npm ci 每次都失败在第一步。
+          #    CI 测的 Node 跟我们实际跑的不是同一个版本，本身就是隐患。
+          node-version: 24
           cache: npm
       - run: npm ci
       - run: npm run lint
