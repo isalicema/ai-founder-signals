@@ -116,6 +116,25 @@ npx tsx tools/seed.ts
 
 ---
 
+## Step 6 · 接上「深看」之后那一半（可选，但建议）
+
+Feed 只负责发现。点「◇ 深看」会把条目放进队列，**但消费队列的那一半要你自己接**
+——归档到哪儿取决于你用什么记笔记。
+
+```bash
+afs queue list          # 待处理
+afs fetch <item-id>     # 取完整正文（YouTube 字幕 / 播客 show notes / 网页正文自动选路）
+afs queue done <id>     # 归档完回写
+```
+
+**把 [docs/ARCHIVE-QUEUE.md](docs/ARCHIVE-QUEUE.md) 交给你的 agent** ——
+那份写明了执行步骤、笔记的质量标准，以及一条不能忽略的 provenance 规则
+（播客只有节目方写的大纲时，不能写成受访者的第一人称）。
+
+不接也能用：feed 本身完整可用，「深看」就当收藏夹标记。
+
+---
+
 ## 日常操作
 
 ```bash
@@ -125,6 +144,8 @@ npx tsx tools/seed.ts
 ./scripts/afs open     # 打开 feed（会确保服务起来）
 ./scripts/afs logs     # 跟踪 worker 日志
 ./scripts/afs build    # 改完代码后重建网页
+./scripts/afs queue    # 收藏队列 list / done
+./scripts/afs fetch    # 取某条完整正文
 ```
 
 建议软链到 `PATH`，之后直接 `afs open`：
