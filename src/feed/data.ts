@@ -13,6 +13,9 @@ import type {
 } from './types';
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+/** 未读收件箱一次最多取多少条。到顶说明积压太久，该清一次而不是继续堆 */
+export const UNREAD_LIMIT = 200;
 const NEW_ENTITY_WINDOW_MS = 60 * 60 * 1000;
 
 /**
@@ -55,7 +58,12 @@ export async function loadFeed(): Promise<FeedPayload> {
         .from(items)
         .innerJoin(sources, eq(items.sourceId, sources.id))
         .where(isNull(items.readAt))
-        .orderBy(desc(items.firstSeenAt)),
+        .orderBy(desc(items.firstSeenAt))
+        // ⚠️ 未读收件箱没有日期边界，必须有上限兜底。
+        //    按每天约 50 条入库估，出差一周回来就是几百条——
+        //    既拖慢渲染，也直接违背「30 秒扫完」。
+        //    到顶时前端会提示，让人去「全部标为已阅」而不是默默截断。
+        .limit(UNREAD_LIMIT),
       connection.db
         .select({
           id: entities.id,

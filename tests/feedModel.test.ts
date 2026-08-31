@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createDemoFeed } from '../src/feed/demo.js';
+import type { FeedItemView } from '../src/feed/types.js';
 import {
   applyLocalFeedAction,
   EMPTY_FILTERS,
@@ -8,6 +9,7 @@ import {
   sortFeedItems,
   splitFeed,
   unreadFeedItems,
+  feedStats,
 } from '../src/feed/model.js';
 
 const now = new Date('2026-08-29T08:00:00+08:00');
@@ -117,5 +119,32 @@ describe('M5 feed model', () => {
     const options = feedOptions(demo);
     expect(options.tags).toContain('产品与用户');
     expect(new Set(options.sources).size).toBe(options.sources.length);
+  });
+});
+
+describe('未读收件箱的统计口径', () => {
+  const at = (iso: string) => iso;
+  const mk = (id: string, firstSeenAt: string, extra: Partial<FeedItemView> = {}): FeedItemView => ({
+    id, title: id, url: `https://e.com/${id}`, sourceName: 'S', country: 'US', region: '海外',
+    mediaType: 'video', publishedAt: null, firstSeenAt, durationSeconds: null, contentChars: null,
+    coverUrl: null, summary: null, tags: [], persons: [], companies: [], entities: [],
+    tier: 'feed', readAt: null, archiveRequestedAt: null, status: 'ok', rejectReason: null,
+    isNewEntity: false, monthlyMention: null, coverTone: 0, ...extra,
+  });
+
+  it('⭐ 区分「今天新到」与「积压」—— total 和 unread 恒等，两块大数字显示同一个数没意义', () => {
+    const today = new Date(); today.setHours(9, 0, 0, 0);
+    const older = new Date(today); older.setDate(older.getDate() - 3);
+    const s = feedStats([mk('a', at(today.toISOString())), mk('b', at(older.toISOString()))]);
+    expect(s.today).toBe(1);
+    expect(s.backlog).toBe(1);
+    expect(s.total).toBe(2);
+    expect(s.unread).toBe(2);   // 收件箱里全是未读，所以两者相等
+  });
+
+  it('空收件箱不报错', () => {
+    const s = feedStats([]);
+    expect(s.today).toBe(0);
+    expect(s.backlog).toBe(0);
   });
 });

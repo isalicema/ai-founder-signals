@@ -54,10 +54,19 @@ export function feedOptions(items: FeedItemView[]) {
   };
 }
 
+/**
+ * ⚠️ 改成未读收件箱后 total 与 unread 恒等（只取未读），
+ *    首屏两块大数字显示同一个数是浪费。新增 today：
+ *    「今天新到的」和「积压的」是两回事，后者才是该清的。
+ */
 export function feedStats(items: FeedItemView[]) {
+  const dayStart = new Date();
+  dayStart.setHours(0, 0, 0, 0);
   return {
     total: items.length,
     unread: items.filter((item) => !item.readAt).length,
+    today: items.filter((item) => new Date(item.firstSeenAt) >= dayStart).length,
+    backlog: items.filter((item) => new Date(item.firstSeenAt) < dayStart).length,
     highlights: items.filter((item) => item.tier === 'highlight').length,
     queued: items.filter((item) => item.archiveRequestedAt).length,
   };
