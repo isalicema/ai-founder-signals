@@ -1,4 +1,4 @@
-import { desc, eq, gte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, lt, sql } from 'drizzle-orm';
 import { sharedDb } from '../db/shared';
 import { entities, items, sources } from '../db/schema';
 import { createDemoFeed } from './demo';
@@ -14,6 +14,23 @@ import type {
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 const NEW_ENTITY_WINDOW_MS = 60 * 60 * 1000;
+const BEIJING_UTC_OFFSET_MS = 8 * 60 * 60 * 1000;
+
+/**
+ * Feed 是一份北京时间晨报：只展示系统今天捕捉入库的条目。
+ *
+ * 这里故意不用 published_at。旧访谈可能今天才被信源发现；Alice 要判断的是
+ * 「今天系统带回了什么」，而不是原内容发布在哪一天。
+ */
+export function beijingDayWindow(now = new Date()): { start: Date; end: Date } {
+  const beijingNow = new Date(now.getTime() + BEIJING_UTC_OFFSET_MS);
+  const start = new Date(Date.UTC(
+    beijingNow.getUTCFullYear(),
+    beijingNow.getUTCMonth(),
+    beijingNow.getUTCDate(),
+  ) - BEIJING_UTC_OFFSET_MS);
+  return { start, end: new Date(start.getTime() + 24 * 60 * 60 * 1000) };
+}
 
 /**
  * Database reads stay opt-in until M7 authentication lands. This keeps an
@@ -26,6 +43,7 @@ export async function loadFeed(): Promise<FeedPayload> {
   }
 
   const connection = sharedDb();
+  const today = beijingDayWindow();
   try {
     const [rows, entityRows, recentRows] = await Promise.all([
       connection.db
@@ -54,8 +72,11 @@ export async function loadFeed(): Promise<FeedPayload> {
         })
         .from(items)
         .innerJoin(sources, eq(items.sourceId, sources.id))
-        .orderBy(desc(sql`${items.readAt} is null`), desc(items.firstSeenAt))
-        .limit(120),
+        .where(and(
+          gte(items.firstSeenAt, today.start),
+          lt(items.firstSeenAt, today.end),
+        ))
+        .orderBy(desc(sql`${items.readAt} is null`), desc(items.firstSeenAt)),
       connection.db
         .select({
           id: entities.id,
