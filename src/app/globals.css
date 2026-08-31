@@ -2260,3 +2260,10 @@ summary:focus-visible {
   .clip-actions { flex-wrap: wrap; }
   .clip-action-spacer { display: none; }
 }
+
+/* 空状态的操作提示：安静的一天不该指着用户去清筛选 */
+.empty-hint { margin-top: 0.75rem; font-size: 0.82rem; opacity: 0.6; }
+.empty-hint code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  padding: 0.1em 0.4em; border: 1px solid currentColor; border-radius: 3px;
+}

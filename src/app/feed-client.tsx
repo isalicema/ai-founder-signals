@@ -304,11 +304,23 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
                 </div>
               ))}
             </div>
+          ) : items.length === 0 ? (
+            /* ⚠️ 两种「空」要分开说。加了当天窗口之后，安静的一天或 worker 没跑
+               也会走到空状态——原来那句「清除一两个筛选」会把人引向错误方向。 */
+            <div className="empty-state glass">
+              <span>∅</span>
+              <h3>今天还没有新信号</h3>
+              <p>Feed 只显示北京时间当天入库的内容。worker 每天 06:00 自动跑，
+                 现在还早、或者今天信源确实没有新访谈。</p>
+              <p className="empty-hint">
+                想立刻抓一次：<code>afs run</code> · 想看它跑得对不对：<code>afs logs</code>
+              </p>
+            </div>
           ) : (
             <div className="empty-state glass">
               <span>∅</span>
               <h3>这组条件下没有信号</h3>
-              <p>清除一两个筛选，信号面会重新展开。</p>
+              <p>今天有 {items.length} 条，但都被筛选排除了。</p>
               <button type="button" onClick={() => setFilters(EMPTY_FILTERS)}>查看全部</button>
             </div>
           )}
