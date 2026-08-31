@@ -2,7 +2,8 @@
 # AI Founder Signals 控制台
 #   afs status | run | web | logs | open | stop | start
 set -u
-PROJECT="$HOME/Projects/ai-founder-signals"
+# 从脚本自身位置推出项目根，别写死路径——克隆到任何目录都能用
+PROJECT="${0:A:h:h}"
 PORT="${AFS_PORT:-8166}"
 W=com.machiwhale.afs.worker
 S=com.machiwhale.afs.web
@@ -40,11 +41,84 @@ case "${1:-status}" in
     echo "── 数据 ──"
     cd "$PROJECT" && npx tsx tools/dbCheck.ts 2>/dev/null | grep -E "信源|待跑|已收录" | sed 's/^/  /'
     ;;
+  doctor)
+    # 逐项检查部署前置条件。设计成「拿到仓库的 agent 跑一次就知道还缺什么」——
+    # 每条都给出具体的下一步命令，而不是只报对错。
+    fail=0
+    ok()   { echo "  ✅ $1"; }
+    bad()  { echo "  ❌ $1"; echo "     → $2"; fail=1; }
+    warn() { echo "  ⚠️  $1"; echo "     → $2"; }
+
+    echo "── 运行环境 ──"
+    if command -v node >/dev/null; then
+      v=$(node -v | sed 's/v\([0-9]*\).*/\1/')
+      [[ "$v" -ge 20 ]] && ok "node $(node -v)" || bad "node 版本过低（$(node -v)）" "需要 v20+，建议用 nvm 装 v24"
+    else bad "找不到 node" "装 Node.js v20+（推荐 nvm）"; fi
+    command -v yt-dlp >/dev/null && ok "yt-dlp $(yt-dlp --version 2>/dev/null)" \
+      || warn "找不到 yt-dlp" "YouTube 源取不到字幕，只会有标题卡。装：brew install yt-dlp"
+    [[ -d "$PROJECT/node_modules" ]] && ok "依赖已安装" || bad "没有 node_modules" "cd $PROJECT && npm ci"
+
+    echo "── 配置 ──"
+    if [[ -f "$PROJECT/.env.local" ]]; then
+      ok ".env.local 存在"
+      grep -qE '^SUPABASE_DB_URL=postgres' "$PROJECT/.env.local" \
+        && ok "SUPABASE_DB_URL 已填" \
+        || bad "SUPABASE_DB_URL 没填或格式不对" "见 SETUP.md 第 2 步：自建 Supabase 项目，取 Session pooler 连接串"
+      grep -qE '^DEEPSEEK_API_KEY=.+' "$PROJECT/.env.local" \
+        && ok "DEEPSEEK_API_KEY 已填" \
+        || bad "DEEPSEEK_API_KEY 没填" "去 platform.deepseek.com 建 key，填进 .env.local"
+      grep -qE '^AFS_FEED_DATA_MODE=database' "$PROJECT/.env.local" \
+        && ok "feed 读真实数据库" \
+        || warn "AFS_FEED_DATA_MODE 不是 database" "feed 会显示演示数据。要读真库就设成 database"
+    else
+      bad "没有 .env.local" "cp $PROJECT/.env.example $PROJECT/.env.local 后按 SETUP.md 填"
+    fi
+
+    echo "── 数据库 ──"
+    if [[ -f "$PROJECT/.env.local" ]] && grep -qE '^SUPABASE_DB_URL=postgres' "$PROJECT/.env.local"; then
+      out=$(cd "$PROJECT" && npx tsx tools/dbCheck.ts 2>&1)
+      if echo "$out" | grep -q "连接成功"; then
+        ok "$(echo "$out" | grep -E '连接成功' | sed 's/^.*· //')"
+        echo "$out" | grep -qE "表 5 张" && ok "5 张表都在" \
+          || bad "表不全或没建" "跑迁移：supabase/migrations/ 下三个 .sql 依次执行"
+        n=$(echo "$out" | grep -oE '信源 [0-9]+ 个' | grep -oE '[0-9]+')
+        [[ "${n:-0}" -gt 0 ]] && ok "信源 $n 个已入库" \
+          || bad "信源表是空的" "cd $PROJECT && npx tsx tools/seed.ts"
+      else
+        bad "连不上数据库" "$(echo "$out" | grep -E '→' | head -1 | sed 's/^ *//')"
+      fi
+    else
+      echo "  ⏭  跳过（先配好 SUPABASE_DB_URL）"
+    fi
+
+    echo "── 服务 ──"
+    launchctl print "$GUI/$W" >/dev/null 2>&1 && ok "worker 已加载（每天 06:00）" \
+      || warn "worker 未加载" "afs install"
+    curl -sf -m 4 --noproxy '*' -o /dev/null "http://127.0.0.1:$PORT" \
+      && ok "网页 localhost:$PORT" || warn "网页未响应" "afs install，或 afs build 后再试"
+
+    echo
+    [[ $fail -eq 0 ]] && echo "🎉 全部就绪。afs open 打开 feed，afs run 立刻抓一次。" \
+      || echo "上面标 ❌ 的必须解决；⚠️ 的会降级但能跑。详见 SETUP.md"
+    exit $fail ;;
   run)   cd "$PROJECT" && exec ./scripts/run-worker.sh ;;
   build) cd "$PROJECT" && npm run build && launchctl kickstart -k "$GUI/$S" && echo "已重建并重启网页服务" ;;
   web)   launchctl kickstart -k "$GUI/$S" && echo "网页服务已重启" ;;
   logs)  tail -f ~/Library/Logs/afs-worker.log ;;
   open)  cd "$PROJECT" && exec ./open-feed.command ;;
+  install)
+    # 从模板按当前实际路径生成 plist——不写死目录，克隆到哪都能装
+    mkdir -p "$HOME/Library/LaunchAgents" "$HOME/Library/Logs"
+    for l in $W $S; do
+      sed -e "s|__PROJECT__|$PROJECT|g" -e "s|__LOGS__|$HOME/Library/Logs|g" \
+        "$PROJECT/deploy/$l.plist.template" > "$HOME/Library/LaunchAgents/$l.plist"
+      plutil -lint "$HOME/Library/LaunchAgents/$l.plist" >/dev/null || { echo "❌ $l plist 生成有误"; exit 1; }
+    done
+    launchctl bootout "$GUI/$W" 2>/dev/null; launchctl bootout "$GUI/$S" 2>/dev/null
+    launchctl bootstrap "$GUI" "$HOME/Library/LaunchAgents/$W.plist"
+    launchctl bootstrap "$GUI" "$HOME/Library/LaunchAgents/$S.plist"
+    echo "✅ 已安装并加载：worker（每天 06:00）+ web（常驻 :$PORT）"
+    echo "   项目路径写入的是：$PROJECT" ;;
   start)
     launchctl bootstrap "$GUI" ~/Library/LaunchAgents/$W.plist 2>/dev/null
     launchctl bootstrap "$GUI" ~/Library/LaunchAgents/$S.plist 2>/dev/null
@@ -53,14 +127,21 @@ case "${1:-status}" in
     launchctl bootout "$GUI/$W" 2>/dev/null
     launchctl bootout "$GUI/$S" 2>/dev/null
     echo "已卸载" ;;
+  uninstall)
+    launchctl bootout "$GUI/$W" 2>/dev/null; launchctl bootout "$GUI/$S" 2>/dev/null
+    rm -f "$HOME/Library/LaunchAgents/$W.plist" "$HOME/Library/LaunchAgents/$S.plist"
+    echo "已卸载并删除 plist（日志和数据库不动）" ;;
   *) echo "用法: afs [status|run|build|web|logs|open|start|stop]
 
+  doctor  检查部署前置条件，逐项给出下一步（新环境先跑这个）
   status  服务与数据概况
   run     立刻跑一次 worker（不等 06:00）
+  install 生成并加载 launchd 服务（首次部署用）
   build   改完代码后重建网页并重启
   web     只重启网页服务
   logs    跟踪 worker 日志
   open    打开 feed 页
   start   加载两个 launchd 服务
-  stop    卸载" ;;
+  stop    停止服务（保留 plist）
+  uninstall 停止并删除 plist" ;;
 esac

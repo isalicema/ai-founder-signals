@@ -2,27 +2,20 @@
 
 AI 创始人一手访谈探测器 —— `collection-manager` 的前置漏斗。
 
-自动扫描信源 → 判定是否创始人一手访谈 → 生成 feed 卡片 → Alice 挑出想深看的 → 交给
-现有的 `collection-manager` skill 做深度分析并存进 Obsidian 收藏夹。
+自动扫描信源 → 判定是否创始人一手访谈 → 生成 feed 卡片 → 你挑出想深看的 → 进收藏队列，
+交给下游做深度分析并归档（我们这边接的是 Obsidian 收藏夹，你可以接自己的）。
 
-> 架构文档：`~/Smart Workspace/Machiwhale Studio/Project/AI Founder Signals｜工程可行性与技术路线 v2.1.md`
 
-## 当前状态
+> **要跑起来？** 看 [SETUP.md](SETUP.md)（5 步，约 15 分钟）。
+> 不确定缺什么就跑 `./scripts/afs doctor`。
+> **要改它？** 先读 [PROJECT.md](PROJECT.md) §4「关键决策」——那里每条背后都有一次真实的翻车。
 
-| 部分 | 负责人 | 状态 |
-|---|---|---|
-| 准入判定规则 + 分档 + entity 归一化 | 妙蛙种子 | ✅ 已完成，评测集已固化 |
-| 判定 / 摘要 prompt | 妙蛙种子 | ✅ 初版完成 |
-| M1（Next.js / TS / CI） | 星子 | ✅ 已完成 |
-| M2（Drizzle schema / Supabase migration / RLS） | 星子 | ✅ 代码完成；待有容器或远程项目时重放迁移 |
-| M3（Job 队列 / worker 骨架 / 临时区） | 星子 | ✅ 已完成 |
-| M4（RSS / 播客 / YouTube 适配器） | 星子 | ✅ 已完成；11 个真实 seed 源 discover 全通过 |
-| M4.5（通用 JSON API 适配器） | 星子 | ✅ 已完成；3 个真源发现 6 / 20 / 20 条，可跑信源增至 14 |
-| M4.6（通用 HTML 适配器） | 星子 | ✅ 已完成；晚点 / 品玩 / AI 闹发现 11 / 38 / 4 条，17 个信源全可跑 |
-| M5（Feed 页） | 星子 | ✅ 已完成；桌面与 390px 移动端浏览器验收通过 |
-| M6（收藏队列接缝） | 星子 / 妙蛙种子 | ⏳ 下一步 |
-| 信源 seed | Alice / 妙蛙种子 | ✅ 17 个实测源已入库 |
-| 15 个一级主题 + 评测集 | RabbitT / 妙蛙种子 | ✅ 已固化 |
+## 现状
+
+每天 06:00 自动跑，`localhost:8166` 随时可看。17 个信源全部可跑，
+178 测试全绿，成本约 $1/月（DeepSeek）+ Supabase 免费档。
+
+详细进度、决策与已知问题都在 [PROJECT.md](PROJECT.md)——**那份是权威来源**。
 
 ## 已实现
 

@@ -4,7 +4,8 @@
 # 端口 8166 是刻意选的：3000 是各类脚手架的默认口，同时开几个项目必撞。
 # 单一来源在这里，其它脚本从这儿读（见 open-feed.command / scripts/afs）。
 set -u
-PROJECT="$HOME/Projects/ai-founder-signals"
+# 从脚本自身位置推出项目根，别写死路径——克隆到任何目录都能用
+PROJECT="${0:A:h:h}"
 # node 三级探测：launchd 的 shell 不加载 ~/.zshrc，nvm.sh 也可能不存在。
 # 形式参考 kimi work/api-usage-board/serve.command——比只 source nvm.sh 稳。
 NODE=$(command -v node 2>/dev/null || true)

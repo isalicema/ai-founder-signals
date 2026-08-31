@@ -8,9 +8,9 @@
 #
 # 形式参考 kimi work/api-usage-board/serve.command。
 #
-# 做成快捷指令时用这一行（nohup + & 不可省，否则快捷指令会干等健康检查）：
-#   nohup "/Users/yangwutu/Projects/ai-founder-signals/open-feed.command" \
-#     >> "/Users/yangwutu/Library/Logs/afs-open.log" 2>&1 &
+# 做成快捷指令时用这一行（把 <项目路径> 换成实际路径；
+# nohup + & 不可省，否则快捷指令会干等健康检查）：
+#   nohup "<项目路径>/open-feed.command" >> "$HOME/Library/Logs/afs-open.log" 2>&1 &
 cd "$(dirname "$0")" || exit 1
 PORT="${AFS_PORT:-8166}"
 GUI="gui/$(id -u)"
