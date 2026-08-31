@@ -80,3 +80,11 @@ Drizzle schema 用于应用侧类型与查询。
 
 > 本项目只监听 `127.0.0.1`，没有登录态——**不要暴露到公网**。
 > 数据库那层已开 RLS 拒绝一切（PostgREST 读不到），但 Web 服务本身没有认证。
+
+---
+
+## License
+
+[MIT](LICENSE)
+
+Made with 妙蛙种子, 星子, RabbitT by Machiwhale Studio

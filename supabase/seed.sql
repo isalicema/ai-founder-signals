@@ -1,2 +1,2 @@
--- Intentionally empty until Alice's 15-source list is ready.
+-- Intentionally empty until 你's 15-source list is ready.
 -- Source seed data belongs here; raw article/transcript content never does.

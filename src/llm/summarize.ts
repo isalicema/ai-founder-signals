@@ -96,7 +96,7 @@ export interface SummarizeInput {
  *
  * 由来：小宇宙不给逐字稿，我们改用单集页内嵌的 show notes。但 show notes 是
  * **节目方撰写的说明与大纲，不是对话实录**——基于它生成的摘要若写成
- * 「创始人说……」就是在冒充第一人称表达。星子在 M4 里为此专门写过一条测试
+ * 「创始人说……」就是在冒充第一人称表达。前端负责人在 M4 里为此专门写过一条测试
  * 拒绝把 show notes 当逐字稿，这个顾虑是对的，所以做成显式约束而不是绕过。
  */
 const PROVENANCE_NOTE: Record<string, string> = {

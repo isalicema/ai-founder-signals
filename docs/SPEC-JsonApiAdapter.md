@@ -1,7 +1,7 @@
 # JsonApiAdapter 施工说明（M4.5，**优先于 HtmlAdapter**）
 
-> 承接人：星子｜排在 M5 之后、HtmlAdapter 之前
-> 线索来自 Alice：irreader 能解析 Founder Park 那个 JS 渲染页面。
+> 承接人：前端负责人｜排在 M5 之后、HtmlAdapter 之前
+> 线索来自你：irreader 能解析 Founder Park 那个 JS 渲染页面。
 > 顺着这条线索查下去，发现了比 irreader 更好的路子——**不需要浏览器**。
 
 > ✅ 2026-08-29 已完成：三个真源分别发现 6 / 20 / 20 条，日期、幂等与正文接缝均通过。
@@ -24,7 +24,7 @@ irreader 用的是「动态订阅（能耗+）」= 真浏览器渲染后套 CSS 
 
 1. **有真实发布时间**——HtmlAdapter 那条路只能填 `null`（列表页格式千差万别，猜日期会污染「本月第 N 场」角标）
 2. **有现成摘要**——直接就是 `admissionSnippet`，L2 判定不用再去抓正文
-3. **不需要浏览器**——能在 GitHub Actions 里跑，不依赖 Alice 的 Mac 开着
+3. **不需要浏览器**——能在 GitHub Actions 里跑，不依赖 本机 开着
 
 ---
 
@@ -147,7 +147,7 @@ Z Potentials 只换 `guestSuid` 为 `8QIf3nxd5YwYvz/c5wM=`。
 
 ## 5. 关于 irreader 本身
 
-**不建议接进管线**。它需要 Alice 的 Mac 开着并运行 GUI 程序，而我们的 worker 设计成
+**不建议接进管线**。它需要 本机 开着并运行 GUI 程序，而我们的 worker 设计成
 跑在 GitHub Actions 上——引入本地 GUI 依赖会让自动化链路多一个「人不在就断」的环节。
 
 但它是**很好的探路工具**：以后遇到抓不动的站，先用 irreader 试，能解析就说明有路可走，

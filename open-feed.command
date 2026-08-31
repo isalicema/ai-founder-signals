@@ -28,10 +28,10 @@ if [ -z "$NODE" ]; then
 fi
 [ -n "$NODE" ] && export PATH="$(dirname "$NODE"):/usr/local/bin:/opt/homebrew/bin:$PATH"
 
-# ⚠️ --noproxy 不可省：Alice 开着 Clash 时环境里有 HTTP_PROXY=127.0.0.1:7897，
+# ⚠️ --noproxy 不可省：开着代理时环境里会有 HTTP_PROXY，
 #    curl 会把对 localhost 的健康检查也走代理，结果永远探测失败——
 #    服务明明是好的。实测踩过，当时误判成「启动慢」查了很久。
-# ⚠️ --noproxy 不可省：Alice 开着 Clash 时环境里有 HTTP_PROXY=127.0.0.1:7897，
+# ⚠️ --noproxy 不可省：开着代理时环境里会有 HTTP_PROXY，
 #    curl 会把对 localhost 的健康检查也走代理，结果永远探测失败——
 #    服务明明是好的。实测踩过，当时误判成「启动慢」查了很久。
 #

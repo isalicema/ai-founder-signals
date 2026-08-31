@@ -354,7 +354,7 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
 
       <footer className="feed-footer">
         <div className="footer-main">
-          <p><span>AFS</span> 只负责发现；判断与深读仍由 Alice 完成。</p>
+          <p><span>AFS</span> 只负责发现；判断与深读仍由你完成。</p>
           <small>Raw material never leaves the worker.</small>
         </div>
         <small className="footer-copyright">

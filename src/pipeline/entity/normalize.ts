@@ -5,7 +5,7 @@ export type EntityKind = 'person' | 'company';
  *
  * 这里只产出用于**匹配**的 key，展示用的 canonical_name 永远保留首次见到的原始写法。
  * 灰色地带（中英文名、音译差异）不猜——同一个人先存成两行不致命，
- * Alice 在实体列表里手动合并即可。宁可漏合并，不可错合并。
+ * 你在实体列表里手动合并即可。宁可漏合并，不可错合并。
  */
 
 const COMPANY_SUFFIXES = [

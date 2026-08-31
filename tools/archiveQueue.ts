@@ -1,16 +1,16 @@
 /**
- * 收藏队列 —— feed 与 collection-manager 的接缝（架构文档 §6）。
+ * 收藏队列 —— feed 与 下游深读流程 的接缝（架构文档 §6）。
  *
- * Alice 在 feed 里点「🔖 深看」只写一个 archive_requested_at，零成本、不阻塞。
+ * 用户在 feed 里点「🔖 深看」只写一个 archive_requested_at，零成本、不阻塞。
  * 真正的深度分析在她有空、有上下文的时候批量跑：
  *
- *   Alice 对妙蛙种子说「处理收藏队列」
+ *   用户说「处理收藏队列」
  *     → npx tsx tools/archiveQueue.ts list        # 我读出待办
- *     → 逐条跑 collection-manager（抓原文→深度分析→存 Obsidian）
+ *     → 逐条跑 下游深读流程（抓原文→深度分析→存 Obsidian）
  *     → npx tsx tools/archiveQueue.ts done <id>   # 回写 archived_at
  *
  * 选这个方案而不是让网页直接调本地服务：零耦合、无常驻进程、失败可重试，
- * 且天然复用已经跑通两年的 collection-manager。
+ * 且天然复用已经跑通两年的 下游深读流程。
  */
 try { process.loadEnvFile(new URL('../.env.local', import.meta.url).pathname); } catch { /* 可选 */ }
 
@@ -88,9 +88,9 @@ try {
     console.log(`收藏队列
 
   list          列出待处理的条目
-  done <id>     标记某条已存进 Obsidian 收藏夹
+  done <id>     标记某条已存进你的笔记库
 
-Alice 在 feed 点「🔖 深看」后，用 list 取出待办，逐条跑 collection-manager，再用 done 回写。`);
+用户在 feed 点「🔖 深看」后，用 list 取出待办，逐条跑 下游深读流程，再用 done 回写。`);
   }
 } finally {
   await connection.close();

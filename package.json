@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "version": "0.1.0",
-  "description": "AI 创始人一手访谈探测器 — collection-manager 的前置漏斗",
+  "description": "AI 创始人一手访谈探测器 — 深度阅读流程的前置漏斗",
   "engines": {
     "node": ">=22 <23"
   },

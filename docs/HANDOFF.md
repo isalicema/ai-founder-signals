@@ -1,9 +1,9 @@
-# 给星子的交接说明
+# 给前端负责人的交接说明
 
-> 架构文档：`~/Smart Workspace/Machiwhale Studio/Project/AI Founder Signals｜工程可行性与技术路线 v2.1.md`
-> 有疑问先读文档，文档没写的问我（妙蛙种子），别自己猜。
+> 架构文档：架构文档（未随仓库发布）
+> 有疑问先读文档，文档没写的问我（架构负责人），别自己猜。
 
-## 星子进度（2026-08-29）
+## 前端负责人进度（2026-08-29）
 
 - ✅ M1：Next.js 15 App Router、严格 TypeScript、ESLint、Vitest、GitHub Actions
 - ✅ M2：五表 Drizzle schema、Supabase migration、RLS 默认封闭
@@ -70,9 +70,9 @@ const t = scoreTier({
 
 ## Feed 页面的验收标准是体感的
 
-**Alice 早上打开，30 秒内扫完当天新增、知道有没有值得点开的。** 做不到这一点，其他模块做得再好都白搭。
+**用户早上打开，30 秒内扫完当天新增、知道有没有值得点开的。** 做不到这一点，其他模块做得再好都白搭。
 
-两个 badge 记得做（都只陈述事实、不参与打分，判断留给 Alice）：
+两个 badge 记得做（都只陈述事实、不参与打分，判断留给你）：
 - 🆕 **首次出现** —— `upsertEntity` 返回的 `isNew`
 - 🔥 **本月第 N 场** —— 按 `companies` / `persons` 分组统计近 30 天，>2 才显示
 
@@ -82,7 +82,7 @@ const t = scoreTier({
 
 ---
 
-## LLM 层已就位（妙蛙种子，2026-08-29）
+## LLM 层已就位（架构负责人，2026-08-29）
 
 ```
 src/llm/
@@ -137,30 +137,30 @@ process.stdout.write(ledger.summary() + '\n');
 ```bash
 DEEPSEEK_API_KEY=sk-... npx tsx tools/smokeLlm.ts
 ```
-跑 4 条准入用例（含 2 条 RabbitT 的难反例）+ 1 次摘要，打印用量。约 $0.002。
+跑 4 条准入用例（含 2 条 内容负责人 的难反例）+ 1 次摘要，打印用量。约 $0.002。
 **这是唯一能验证 LLM 层真的通的方式，单测全是桩。**
 
 ---
 
-## M6 收藏队列接缝已就位（妙蛙种子）
+## M6 收藏队列接缝已就位（架构负责人）
 
-`tools/archiveQueue.ts` —— feed 与 collection-manager 的接缝。
+`tools/archiveQueue.ts` —— feed 与 下游深读流程 的接缝。
 
 ```bash
 npx tsx tools/archiveQueue.ts list        # 列出待处理
 npx tsx tools/archiveQueue.ts done <id>   # 回写 archived_at
 ```
 
-星子这边只需要保证 M5 的「🔖 深看」按钮写 `item.archive_requested_at`
-（已完成，见 `src/app/actions.ts`）。**不要在网页里调 collection-manager**
+前端负责人这边只需要保证 M5 的「🔖 深看」按钮写 `item.archive_requested_at`
+（已完成，见 `src/app/actions.ts`）。**不要在网页里调 下游深读流程**
 ——那需要本地常驻服务，而 worker 设计成跑在 Actions 上。
 
-工作流：Alice 点「深看」（零成本意向标记，不阻塞）→ 稍后在 Claude Code 说
-「处理收藏队列」→ 妙蛙种子读队列逐条跑 collection-manager → 回写。
+工作流：用户点「深看」（零成本意向标记，不阻塞）→ 稍后在 Claude Code 说
+「处理收藏队列」→ 架构负责人读队列逐条跑 下游深读流程 → 回写。
 
 ---
 
-## Worker 主入口已就位（妙蛙种子）
+## Worker 主入口已就位（架构负责人）
 
 ```
 src/worker/
@@ -198,7 +198,7 @@ enqueueDailyDiscover  每个启用信源一个 discover 任务（key 带日期�
 
 ### ⚠️ 没有 rescore，也不要加
 
-反馈不调权（Alice 看完首批 50 条后的决定）：她不点赞不点踩、不调信源权重，
+反馈不调权（用户看完首批 50 条后的决定）：她不点赞不点踩、不调信源权重，
 信源已经少而精，只看卡片本身质量。所以**没有任何东西会重算已有条目的 tier**，
 手动设的高亮/折叠永远不会被覆盖——原先那个「反馈会被 rescore 洗掉」的隐患
 随之消失，`user_signal` 列也不需要了。

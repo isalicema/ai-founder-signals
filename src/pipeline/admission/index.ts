@@ -59,7 +59,7 @@ export async function admit(input: AdmissionInput, llmJudge?: LlmJudge): Promise
     };
   }
 
-  // ⚠️ 架构修正（2026-08-29，由 RabbitT 评测样本暴露）：
+  // ⚠️ 架构修正（2026-08-29，由 内容负责人 评测样本暴露）：
   //
   //   旧设计：L1 强正向 → 直接通过，不调 L2。
   //   为什么错：标题里的体裁词只能证明「这是一场访谈」，证明不了

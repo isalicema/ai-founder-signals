@@ -1,7 +1,7 @@
 import type { NewSource } from '../schema.js';
 
 /**
- * 信源 seed —— Alice 2026-08-29 提供，妙蛙种子实测校准。
+ * 信源 seed —— 人工挑选，purity 与 fetch_mode 均为实测校准，不是估的。
  *
  * ⚠️ purity 的准确定义（模板里我写含糊了，这里以此为准）：
  *    不是「几成是访谈体裁」，而是「几成是 **AI 创始人** 一手访谈」。
@@ -15,7 +15,7 @@ import type { NewSource } from '../schema.js';
 export const SEED_SOURCES: NewSource[] = [
   // ───────────── 国内 ─────────────
   // 说明：这些多为第三方镜像站。原文首发在微信公众号（抓不动），
-  // 镜像站反而更好抓——这是 Alice 有意的选择，不是将就。
+  // 镜像站反而更好抓——这是 刻意的选择，不是将就。
   {
     name: '晚点 LatePost', url: 'https://www.latepost.com/',
     country: 'CN', language: 'zh', ingestMethod: 'html', fetchMode: 'full', purity: 0.5,
@@ -105,14 +105,14 @@ export const SEED_SOURCES: NewSource[] = [
     url: 'https://www.xiaoyuzhoufm.com/podcast/626b46ea9cbbf0451cf5a962',
     country: 'CN', language: 'zh', ingestMethod: 'podcast', fetchMode: 'full', purity: 0.6,
     // ✅ 实测：单集链接在 HTML 里（15 条）
-    // ⬇️ Alice 填 0.8，我下调到 0.6：抓到的最新两集是「领读 Kimi K3 技术报告」和
+    // ⬇️ 初值填 0.8，我下调到 0.6：抓到的最新两集是「领读 Kimi K3 技术报告」和
     //    「17 岁 ICML 少年」，都不是创始人访谈。体裁纯但对象不全是创始人。
   },
   {
     name: '跨国串门计划',
     url: 'https://www.xiaoyuzhoufm.com/podcast/670f3da40d2f24f28978736f',
     country: 'CN', language: 'zh', ingestMethod: 'podcast', fetchMode: 'full', purity: 0.7,
-    // 注：Alice 提示与海外播客可能重复——去重 L2 指纹层会处理不了（不同载体），
+    // 注：与部分海外播客可能重复——去重 L2 指纹层会处理不了（不同载体），
     //     但 feed 里相邻显示即可，MVP 不做跨载体合并（架构文档 §6.1）
   },
 

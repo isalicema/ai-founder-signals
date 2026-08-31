@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { TOPICS, sanitizeTags, isTopic, MAX_TAGS } from '../src/pipeline/topics.js';
 
-describe('主题闭集（RabbitT 定稿）', () => {
+describe('主题闭集（定稿）', () => {
   it('15 个主题，无重复', () => {
     expect(TOPICS).toHaveLength(15);
     expect(new Set(TOPICS).size).toBe(15);

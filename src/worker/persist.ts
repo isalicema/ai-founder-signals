@@ -12,7 +12,7 @@ export interface EntityOutcome {
   canonical: string[];
   /** 有任一实体是首次出现 → 卡片上的 🆕 角标 */
   anyNew: boolean;
-  /** 命中 Alice 事后打过星的实体 → tier_score 的 entityStarred 项 */
+  /** 命中 用户事后打过星的实体 → tier_score 的 entityStarred 项 */
   anyStarred: boolean;
 }
 
@@ -20,7 +20,7 @@ export interface EntityOutcome {
  * 把抽取到的人名/公司名并进 entity 表。
  *
  * ⚠️ 这张表由系统自动生长，不需要事先提供名单（架构文档 §0.5）。
- *    归一化尽力而为——同一个人先存成两行不致命，Alice 可以事后手动合并；
+ *    归一化尽力而为——同一个人先存成两行不致命，你可以事后手动合并；
  *    宁可漏合并，不可错合并。
  */
 export async function upsertEntities(

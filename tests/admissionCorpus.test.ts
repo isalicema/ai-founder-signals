@@ -3,7 +3,7 @@ import { admit, type LlmJudge } from '../src/pipeline/admission/index.js';
 import { POSITIVE, NEGATIVE } from '../tools/corpus.js';
 
 /**
- * 准入评测集 —— RabbitT 2026-08-29 定稿的 5 正 + 5 反。
+ * 准入评测集 —— 内容负责人 2026-08-29 定稿的 5 正 + 5 反。
  *
  * ⚠️ 这组用例的契约是「哪一层做了决定」，不是「LLM 桩答对了没」。
  *    断言 llmUsed 才能证明分层逻辑正确；只断言 accepted 会让桩的行为
@@ -12,7 +12,7 @@ import { POSITIVE, NEGATIVE } from '../tools/corpus.js';
 const A = { mediaType: 'article' as const, contentChars: 9000 };
 const judgeYes = () => vi.fn<LlmJudge>(async () => ({ is_founder_interview: true, confidence: 0.8 }));
 
-describe('准入评测集（RabbitT 定稿）', () => {
+describe('准入评测集（定稿）', () => {
   it('⭐ 5 条正例一条都不能被 L1 拒掉（召回优先，§0.4）', async () => {
     for (const c of POSITIVE) {
       const r = await admit({ title: c.t, ...A, source: { purity: c.purity } }, judgeYes());
