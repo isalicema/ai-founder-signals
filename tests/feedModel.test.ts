@@ -7,6 +7,7 @@ import {
   filterFeedItems,
   sortFeedItems,
   splitFeed,
+  unreadFeedItems,
 } from '../src/feed/model.js';
 
 const now = new Date('2026-08-29T08:00:00+08:00');
@@ -27,6 +28,30 @@ describe('M5 feed model', () => {
     const sorted = sortFeedItems(demo.filter((item) => item.tier !== 'folded'));
     expect(sorted.slice(0, 2).every((item) => item.tier === 'highlight')).toBe(true);
     expect(sorted.at(-1)?.readAt).not.toBeNull();
+  });
+
+  it('keeps unread backlog regardless of capture date and excludes newer read items', () => {
+    const oldUnread = { ...demo[0]!, id: 'old-unread', firstSeenAt: '2026-08-25T00:00:00.000Z', readAt: null };
+    const newRead = { ...demo[1]!, id: 'new-read', firstSeenAt: now.toISOString(), readAt: now.toISOString() };
+
+    expect(unreadFeedItems([oldUnread, newRead]).map((item) => item.id)).toEqual(['old-unread']);
+  });
+
+  it('removes an opened item from the unread inbox and lets an undo restore it', () => {
+    const target = demo.find((item) => !item.readAt)!;
+    const opened = applyLocalFeedAction(demo, {
+      type: 'opened_source',
+      itemId: target.id,
+      at: now.toISOString(),
+    });
+    expect(unreadFeedItems(opened).some((item) => item.id === target.id)).toBe(false);
+
+    const restored = applyLocalFeedAction(opened, {
+      type: 'set_items_read',
+      itemIds: [target.id],
+      readAt: null,
+    });
+    expect(unreadFeedItems(restored).some((item) => item.id === target.id)).toBe(true);
   });
 
   it('moves feedback actions through tiers and keeps folded content recoverable', () => {

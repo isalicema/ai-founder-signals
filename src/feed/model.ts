@@ -9,6 +9,11 @@ export const EMPTY_FILTERS: FeedFilters = {
   mediaType: '',
 };
 
+/** Feed 是未读收件箱；已阅条目留在数据库，但不再参与任何页面派生状态。 */
+export function unreadFeedItems(items: FeedItemView[]): FeedItemView[] {
+  return items.filter((item) => !item.readAt);
+}
+
 export function filterFeedItems(items: FeedItemView[], filters: FeedFilters): FeedItemView[] {
   return items.filter((item) => (
     (!filters.person || item.persons.includes(filters.person)) &&

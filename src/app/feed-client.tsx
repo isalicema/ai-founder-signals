@@ -15,7 +15,10 @@ import {
   EMPTY_FILTERS,
   feedOptions,
   feedStats,
-  splitFeed, groupConversations } from '../feed/model';
+  splitFeed,
+  groupConversations,
+  unreadFeedItems,
+} from '../feed/model';
 import type {
   FeedFilters,
   FeedItemAction,
@@ -61,9 +64,10 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
   const [notice, setNotice] = useState('');
   const [readUndoIds, setReadUndoIds] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
-  const options = useMemo(() => feedOptions(items), [items]);
-  const stats = useMemo(() => feedStats(items), [items]);
-  const { visible, folded } = useMemo(() => splitFeed(items, filters), [items, filters]);
+  const unreadItems = useMemo(() => unreadFeedItems(items), [items]);
+  const options = useMemo(() => feedOptions(unreadItems), [unreadItems]);
+  const stats = useMemo(() => feedStats(unreadItems), [unreadItems]);
+  const { visible, folded } = useMemo(() => splitFeed(unreadItems, filters), [unreadItems, filters]);
   const activeFilters = Object.values(filters).filter(Boolean).length;
   const groups = useMemo(() => groupConversations(visible), [visible]);
   const scopedItems = useMemo(() => [...visible, ...folded], [visible, folded]);
@@ -221,9 +225,9 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
           <div className="legend glass">
             <span><i className="dot unread" />未读</span>
             <span><i className="dot highlight" />高亮</span>
-            <span><i className="dot read" />已读</span>
+            <span><i className="dot folded" />低分</span>
           </div>
-          <p className="rail-goal">目标：30 秒扫完今天的新信号。</p>
+          <p className="rail-goal">目标：30 秒清空未读信号。</p>
         </aside>
 
         <section className="signal-stream" aria-labelledby="stream-title">
@@ -304,14 +308,11 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
                 </div>
               ))}
             </div>
-          ) : items.length === 0 ? (
-            /* ⚠️ 两种「空」要分开说。加了当天窗口之后，安静的一天或 worker 没跑
-               也会走到空状态——原来那句「清除一两个筛选」会把人引向错误方向。 */
+          ) : unreadItems.length === 0 ? (
             <div className="empty-state glass">
               <span>∅</span>
-              <h3>今天还没有新信号</h3>
-              <p>Feed 只显示北京时间当天入库的内容。worker 每天 06:00 自动跑，
-                 现在还早、或者今天信源确实没有新访谈。</p>
+              <h3>未读信号已经清空</h3>
+              <p>今天和之前积压的信号都已阅。新条目入库后，会自动出现在这里。</p>
               <p className="empty-hint">
                 想立刻抓一次：<code>afs run</code> · 想看它跑得对不对：<code>afs logs</code>
               </p>
@@ -320,7 +321,7 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
             <div className="empty-state glass">
               <span>∅</span>
               <h3>这组条件下没有信号</h3>
-              <p>今天有 {items.length} 条，但都被筛选排除了。</p>
+              <p>未读池里有 {unreadItems.length} 条，但都被筛选排除了。</p>
               <button type="button" onClick={() => setFilters(EMPTY_FILTERS)}>查看全部</button>
             </div>
           )}

@@ -26,12 +26,16 @@ export async function applyFeedAction(action: FeedItemAction): Promise<FeedActio
         : and(eq(entities.kind, action.entityKind), eq(entities.canonicalName, action.entityName));
       await connection.db.update(entities).set({ starred: action.starred }).where(condition);
     } else if (action.type === 'set_items_read') {
-      const itemIds = [...new Set(action.itemIds.filter((id) => UUID.test(id)))].slice(0, 120);
+      const itemIds = [...new Set(action.itemIds.filter((id) => UUID.test(id)))];
       if (itemIds.length === 0) return { ok: true, persisted: false };
-      await connection.db
-        .update(items)
-        .set({ readAt: action.readAt ? new Date(action.readAt) : null })
-        .where(inArray(items.id, itemIds));
+      await connection.db.transaction(async (transaction) => {
+        for (let offset = 0; offset < itemIds.length; offset += 120) {
+          await transaction
+            .update(items)
+            .set({ readAt: action.readAt ? new Date(action.readAt) : null })
+            .where(inArray(items.id, itemIds.slice(offset, offset + 120)));
+        }
+      });
     } else {
       if (!UUID.test(action.itemId)) return { ok: true, persisted: false };
       const at = new Date(action.at);
