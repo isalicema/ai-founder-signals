@@ -34,5 +34,47 @@ if [[ ! -f .next/BUILD_ID ]]; then
 fi
 
 PORT="${AFS_PORT:-8166}"
-echo "$(date '+%H:%M:%S') 启动 localhost:$PORT"
-exec npx next start -p "$PORT"
+NEXT_BIN="$PROJECT/node_modules/next/dist/bin/next"
+
+# `next start` 会把启动时的构建清单留在内存里。若另一个终端直接执行
+# `npm run build`，`.next` 会被新产物替换，而旧进程仍会向浏览器下发旧 chunk
+# 地址，最终变成整页 ChunkLoadError。这里不负责构建，只在完整的新 BUILD_ID
+# 出现后平滑重启 next 子进程，让直接 build 和 `afs build` 两条路径都能自愈。
+SERVER_PID=""
+stop_server() {
+  if [[ -n "$SERVER_PID" ]] && kill -0 "$SERVER_PID" 2>/dev/null; then
+    kill -TERM "$SERVER_PID" 2>/dev/null || true
+    wait "$SERVER_PID" 2>/dev/null || true
+  fi
+}
+trap 'stop_server; exit 0' TERM INT HUP
+
+while true; do
+  START_BUILD_ID=$(<.next/BUILD_ID)
+  echo "$(date '+%H:%M:%S') 启动 localhost:$PORT · build ${START_BUILD_ID[1,8]}"
+  "$NODE" "$NEXT_BIN" start -p "$PORT" &
+  SERVER_PID=$!
+  BUILD_CHANGED=0
+
+  while kill -0 "$SERVER_PID" 2>/dev/null; do
+    sleep 2
+    # 构建过程中 BUILD_ID 会短暂消失；只在新 ID 完整落盘后重启。
+    if [[ -f .next/BUILD_ID ]]; then
+      CURRENT_BUILD_ID=$(<.next/BUILD_ID)
+      if [[ -n "$CURRENT_BUILD_ID" && "$CURRENT_BUILD_ID" != "$START_BUILD_ID" ]]; then
+        echo "$(date '+%H:%M:%S') 检测到新构建 ${CURRENT_BUILD_ID[1,8]}，重启网页服务…"
+        BUILD_CHANGED=1
+        stop_server
+        SERVER_PID=""
+        break
+      fi
+    fi
+  done
+
+  if [[ "$BUILD_CHANGED" -eq 1 ]]; then
+    continue
+  fi
+
+  wait "$SERVER_PID"
+  exit $?
+done
