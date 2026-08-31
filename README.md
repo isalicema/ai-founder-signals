@@ -109,9 +109,10 @@ Drizzle schema 用于应用侧类型与查询。
   **把 doctor 的输出贴上**（它不含任何密钥）
 - **想加信源 / 改判定规则** → 直接 fork 改，`src/db/seed/sources.ts` 和
   `prompts/` 就是给你改的
-- **其它** → yangwutu@gmail.com
+- **其它** → 也开 [Issue](https://github.com/isalicema/ai-founder-signals/issues)
 
-优先用 Issue 而不是邮件：答案留在公开的地方，下一个遇到同样问题的人能搜到。
+都走 Issue：答案留在公开的地方，下一个遇到同样问题的人能搜到；
+邮件是一对一的，答一次只帮到一个人。
 
 ---
 
