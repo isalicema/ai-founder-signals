@@ -90,7 +90,9 @@ export function applyLocalFeedAction(items: FeedItemView[], action: FeedItemActi
     if (item.id !== action.itemId) return item;
     switch (action.type) {
       case 'opened_source':
-        return { ...item, readAt: item.readAt ?? action.at };
+        // 打开原文是浏览事件，不是「处理完毕」。卡片必须留在收件箱里，
+        // 让用户回来后还能继续点深看、点赞或点踩。
+        return item;
       case 'archive_requested':
         return { ...item, archiveRequestedAt: item.archiveRequestedAt ?? action.at };
       case 'irrelevant':

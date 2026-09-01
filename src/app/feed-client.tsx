@@ -488,7 +488,7 @@ function SignalCard({
           {!item.readAt && <span className="unread-label">未读</span>}
         </div>
 
-        <a className="card-title" href={item.url} target="_blank" rel="noreferrer" onClick={() => onAction({ type: 'opened_source', itemId: item.id, at: actionAt() }, '已记录打开原文')}>
+        <a className="card-title" href={item.url} target="_blank" rel="noreferrer" onClick={() => onAction({ type: 'opened_source', itemId: item.id, at: actionAt() }, '已打开原文，卡片仍保留在未读池')}>
           <h3>{item.title}</h3>
         </a>
 
@@ -535,7 +535,7 @@ function SignalCard({
         )}
 
         <div className="card-actions">
-          <a href={item.url} target="_blank" rel="noreferrer" onClick={() => onAction({ type: 'opened_source', itemId: item.id, at: actionAt() }, '已记录打开原文')}>
+          <a href={item.url} target="_blank" rel="noreferrer" onClick={() => onAction({ type: 'opened_source', itemId: item.id, at: actionAt() }, '已打开原文，卡片仍保留在未读池')}>
             <span aria-hidden="true">↗</span> 看原文
           </a>
           <button
@@ -595,7 +595,7 @@ function ConversationClip({
 
   const recordOpened = () => onAction(
     { type: 'opened_source', itemId: item.id, at: actionAt() },
-    '已记录打开原文',
+    '已打开原文，卡片仍保留在未读池',
   );
 
   return (
@@ -675,7 +675,7 @@ function FoldedRow({
     <article className="folded-row">
       <div className="folded-type">{mediaMarks[item.mediaType]}</div>
       <div>
-        <a href={item.url} target="_blank" rel="noreferrer" onClick={() => onAction({ type: 'opened_source', itemId: item.id, at: actionAt() }, '已记录打开原文')}><h3>{item.title}</h3></a>
+        <a href={item.url} target="_blank" rel="noreferrer" onClick={() => onAction({ type: 'opened_source', itemId: item.id, at: actionAt() }, '已打开原文，卡片仍保留在未读池')}><h3>{item.title}</h3></a>
         <p>{item.sourceName} · {item.rejectReason ?? '低分信号'}</p>
         <span>🤖 AI 摘要 · 未生成</span>
       </div>

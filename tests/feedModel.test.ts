@@ -39,21 +39,15 @@ describe('M5 feed model', () => {
     expect(unreadFeedItems([oldUnread, newRead]).map((item) => item.id)).toEqual(['old-unread']);
   });
 
-  it('removes an opened item from the unread inbox and lets an undo restore it', () => {
+  it('keeps an opened item in the unread inbox so follow-up actions remain available', () => {
     const target = demo.find((item) => !item.readAt)!;
     const opened = applyLocalFeedAction(demo, {
       type: 'opened_source',
       itemId: target.id,
       at: now.toISOString(),
     });
-    expect(unreadFeedItems(opened).some((item) => item.id === target.id)).toBe(false);
-
-    const restored = applyLocalFeedAction(opened, {
-      type: 'set_items_read',
-      itemIds: [target.id],
-      readAt: null,
-    });
-    expect(unreadFeedItems(restored).some((item) => item.id === target.id)).toBe(true);
+    expect(opened.find((item) => item.id === target.id)?.readAt).toBeNull();
+    expect(unreadFeedItems(opened).some((item) => item.id === target.id)).toBe(true);
   });
 
   it('moves feedback actions through tiers and keeps folded content recoverable', () => {

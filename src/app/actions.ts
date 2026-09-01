@@ -41,7 +41,7 @@ export async function applyFeedAction(action: FeedItemAction): Promise<FeedActio
       const at = new Date(action.at);
       await connection.db.transaction(async (transaction) => {
         if (action.type === 'opened_source') {
-          await transaction.update(items).set({ readAt: at }).where(eq(items.id, action.itemId));
+          // 只记录浏览行为；打开原文不代表已经完成这张卡片的判断。
           await transaction.insert(feedback).values({ itemId: action.itemId, signal: 'opened_source' });
         } else if (action.type === 'archive_requested') {
           await transaction.update(items).set({ archiveRequestedAt: at }).where(eq(items.id, action.itemId));
