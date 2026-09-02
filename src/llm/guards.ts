@@ -49,16 +49,31 @@ export function stripQuotedSpeech(summary: string, minChars = QUOTED_SPEECH_MIN_
 export interface SummaryCheck {
   ok: boolean;
   quoted: QuotedSpan[];
+  /** 摘要应以中文为主；英文品牌名、产品名和术语可以保留。 */
+  languageOk: boolean;
   /** 长度只警告不拦截——中英文摘要字数天然不同 */
   lengthWarning: string | null;
 }
 
+/**
+ * 拒绝整段英文摘要，但允许中文句子里保留 DHH、Agent、ARR 等英文专名。
+ * 用占比而不是「出现过一个汉字」判断，避免模型在英文末尾补一个中文词就蒙混过关。
+ */
+export function isChineseSummary(summary: string): boolean {
+  const han = summary.match(/\p{Script=Han}/gu)?.length ?? 0;
+  const latin = summary.match(/[A-Za-z]/g)?.length ?? 0;
+  if (han === 0) return false;
+  return han / (han + latin) >= 0.25;
+}
+
 export function checkSummary(summary: string): SummaryCheck {
   const quoted = findQuotedSpeech(summary);
+  const languageOk = isChineseSummary(summary);
   const n = summary.trim().length;
   return {
-    ok: quoted.length === 0,
+    ok: quoted.length === 0 && languageOk,
     quoted,
+    languageOk,
     lengthWarning: n < 60 ? `summary_too_short:${n}` : n > 700 ? `summary_too_long:${n}` : null,
   };
 }

@@ -26,8 +26,10 @@ const SYSTEM = `为这场 AI 创始人访谈生成 feed 卡片信息，以 json 
 🚫 硬约束：
 1. 禁止输出任何引号包裹的原话。不要写「他说："……"」，不要摘录原句，只写概括。
    这个系统不保存原文，无法核验引文，所以一句都不允许编造的空间。
-2. tags 只能从下面固定主题里选 3-5 个，不允许自创。
-3. 写事实与判断，不写「本文精彩纷呈」「值得一读」这类空话。
+2. summary 必须使用简体中文。即使标题、正文或字幕是英文，也要用中文概括；
+   DHH、Agent、ARR 等人名、品牌名、产品名和专有术语可保留英文。
+3. tags 只能从下面固定主题里选 3-5 个，不允许自创。
+4. 写事实与判断，不写「本文精彩纷呈」「值得一读」这类空话。
 
 一级主题（只能从这些里选）：
 ${TOPICS.join(' / ')}
@@ -41,7 +43,7 @@ ${TOPICS.join(' / ')}
 - 「创业历程」只在起步、转型、失败或个人经历占明显篇幅时用。
 - 地区不进 tags。融资不是独立主题，谈融资策略/现金流/资本效率时用「商业模式」。
 
-summary 写法（150-250 字，原文是英文就用英文写）：
+summary 写法（150-250 个汉字，统一使用简体中文）：
 压缩成一段，不要分点、不要小标题，按这个顺序：
 1. 这场访谈的核心话题是什么；
 2. 创始人给出的最具体的 1-2 个判断或做法——要具体：什么数字、什么取舍、什么反直觉的选择；
@@ -125,7 +127,7 @@ export async function summarizeItem(
     completeJsonValidated(
       {
         task: 'summary',
-        system: corrective ? `${base}\n\n⚠️ 上一次输出违反了硬约束 1：${corrective}` : base,
+        system: corrective ? `${base}\n\n⚠️ 上一次输出违反了硬约束：${corrective}` : base,
         user: content,
         maxTokens: 2048,
       },
@@ -139,15 +141,27 @@ export async function summarizeItem(
   let parsed = await call();
   if (!parsed) throw new SummarizeError('summarize_parse_failed');
 
-  // 引文校验：违规则重试一次，仍违规就直接摘掉引文内容
+  // 语言与引文校验：违规则带具体原因重试一次。
   let check = checkSummary(parsed.summary);
   if (!check.ok) {
-    warnings.push(`quoted_speech_retry:${check.quoted.length}`);
-    const retry = await call(`不要出现「${check.quoted[0]?.text.slice(0, 20)}…」这样的引号原话`);
+    const corrections: string[] = [];
+    if (!check.languageOk) {
+      warnings.push('summary_language_retry');
+      corrections.push('summary 必须以简体中文为主，英文只保留人名、品牌名、产品名和专有术语');
+    }
+    if (check.quoted.length > 0) {
+      warnings.push(`quoted_speech_retry:${check.quoted.length}`);
+      corrections.push(`不要出现「${check.quoted[0]?.text.slice(0, 20)}…」这样的引号原话`);
+    }
+    const retry = await call(corrections.join('；'));
     if (retry) {
       parsed = retry;
       check = checkSummary(parsed.summary);
     }
+  }
+  if (!check.languageOk) {
+    warnings.push('summary_language_failed');
+    throw new SummarizeError('summary_language_failed');
   }
   let summary = parsed.summary;
   if (!check.ok) {

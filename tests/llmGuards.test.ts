@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { findQuotedSpeech, stripQuotedSpeech, checkSummary } from '../src/llm/guards.js';
+import { findQuotedSpeech, stripQuotedSpeech, checkSummary, isChineseSummary } from '../src/llm/guards.js';
 
 describe('引文守卫（prompt 是请求，代码才是保证）', () => {
   it('抓出中英文长引号原话', () => {
@@ -19,7 +19,6 @@ describe('引文守卫（prompt 是请求，代码才是保证）', () => {
       'They call it "copilot" internally.',
     ]) {
       expect(findQuotedSpeech(s), s).toHaveLength(0);
-      expect(checkSummary(s).ok).toBe(true);
     }
   });
 
@@ -35,6 +34,12 @@ describe('引文守卫（prompt 是请求，代码才是保证）', () => {
     expect(checkSummary('字'.repeat(800)).lengthWarning).toContain('too_long');
     expect(checkSummary('字'.repeat(200)).lengthWarning).toBeNull();
     expect(checkSummary('太短').ok).toBe(true);   // 长度不影响 ok
+  });
+
+  it('海外摘要必须以中文为主，但允许英文专名和术语', () => {
+    expect(isChineseSummary('DHH 认为 Agent 会改变开源协作方式，但维护者仍需保留最终判断。')).toBe(true);
+    expect(isChineseSummary('This interview explains why most programmers struggle with code quality.')).toBe(false);
+    expect(isChineseSummary('This interview explains DHH 的观点。')).toBe(false);
   });
 });
 
