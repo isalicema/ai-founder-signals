@@ -146,6 +146,13 @@ function parseDate(value: string | undefined): Date | null {
 }
 
 function firstText(value: unknown): string | undefined {
+  if (Array.isArray(value)) {
+    for (const candidate of value) {
+      const text = firstText(candidate);
+      if (text) return text;
+    }
+    return undefined;
+  }
   if (typeof value === 'string') return value.trim() || undefined;
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
   const record = asRecord(value);

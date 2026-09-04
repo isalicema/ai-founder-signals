@@ -116,6 +116,27 @@ export const SEED_SOURCES: NewSource[] = [
     //    AI 创始人、研究员和投资人内容混合，保留 L2 身份判定，不走高纯度直通。
   },
   {
+    name: '科技早知道',
+    url: 'https://feeds.fireside.fm/guiguzaozhidao/rss',
+    country: 'CN', language: 'zh', ingestMethod: 'podcast', fetchMode: 'full', purity: 0.2,
+    // ✅ Fireside RSS 实测发现 430 集，最新单集页可提取 1,756 字 show notes。
+    //    近期以科技趋势和行业观察为主，AI 创始人一手访谈占比较低，必须走 L2。
+  },
+  {
+    name: '晚点聊',
+    url: 'https://feeds.fireside.fm/latetalk/rss',
+    country: 'CN', language: 'zh', ingestMethod: 'podcast', fetchMode: 'full', purity: 0.5,
+    // ✅ Fireside RSS 实测发现 180 集，最新单集页可提取 2,854 字 show notes。
+    //    创始人深访与记者圆桌、技术专家访谈混合，保留 L2 身份判定。
+  },
+  {
+    name: '硅谷101',
+    url: 'https://feeds.fireside.fm/sv101/rss',
+    country: 'CN', language: 'zh', ingestMethod: 'podcast', fetchMode: 'full', purity: 0.3,
+    // ✅ Fireside RSS 实测发现 259 集，最新单集页可提取 3,149 字 show notes。
+    //    AI、商业、科研与体育等主题混合，不把访谈体裁误当成创始人纯度。
+  },
+  {
     name: '跨国串门计划',
     url: 'https://www.xiaoyuzhoufm.com/podcast/670f3da40d2f24f28978736f',
     country: 'CN', language: 'zh', ingestMethod: 'podcast', fetchMode: 'full', purity: 0.7,

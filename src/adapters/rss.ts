@@ -11,7 +11,7 @@ import { parseFeed } from './feedParser.js';
 import { AdapterError, FetchBlockedError } from './errors.js';
 import { extractArticleText } from './html.js';
 import { parsePodcastPage } from './podcastPage.js';
-import { extractEmbeddedNotes } from './embeddedNotes.js';
+import { extractEmbeddedNotes, MIN_NOTES_CHARS } from './embeddedNotes.js';
 
 export interface RssAdapterOptions {
   fetcher?: FetchFn;
@@ -26,9 +26,12 @@ export class RssAdapter implements SourceAdapter {
   }
 
   async discover(source: AdapterSource): Promise<DiscoveredItem[]> {
+    // 长寿命播客常把全部历史节目和完整 show notes 放进同一个 RSS。
+    // 科技早知道的真实 Feed 已到 7.4 MB，因此播客单独给 10 MB，普通 RSS 仍守 5 MB。
+    const feedMaxBytes = source.ingestMethod === 'podcast' ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
     const first = await fetchTextResource(source.url, {
       fetcher: this.#fetcher,
-      maxBytes: 5 * 1024 * 1024,
+      maxBytes: feedMaxBytes,
     });
     if (looksLikeFeed(first.text)) return this.#parse(first.text, first.url, source);
 
@@ -36,7 +39,7 @@ export class RssAdapter implements SourceAdapter {
     if (feedUrl) {
       const linked = await fetchTextResource(feedUrl, {
         fetcher: this.#fetcher,
-        maxBytes: 5 * 1024 * 1024,
+        maxBytes: feedMaxBytes,
       });
       return this.#parse(linked.text, linked.url, source);
     }
@@ -63,8 +66,10 @@ export class RssAdapter implements SourceAdapter {
         maxBytes: 10 * 1024 * 1024,
         accept: 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.5',
       });
-      const notes = extractEmbeddedNotes(page.text);
-      if (!notes) throw new FetchBlockedError('transcript_unavailable');
+      // 小宇宙把 show notes 放在内嵌 JSON；Fireside 则直接服务端渲染在正文。
+      // 两种都按页面结构提取，不按域名或信源名称分支。
+      const notes = extractEmbeddedNotes(page.text) ?? extractArticleText(page.text);
+      if (notes.length < MIN_NOTES_CHARS) throw new FetchBlockedError('transcript_unavailable');
       return { rawText: notes, language: item.languageHint ?? 'und', provenance: 'shownotes' };
     }
 

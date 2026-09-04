@@ -32,6 +32,17 @@ describe('RssAdapter', () => {
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
 
+  it('accepts a podcast feed whose declared size is between 5 MB and 10 MB', async () => {
+    const adapter = new RssAdapter({ fetcher: vi.fn(async () => new Response(PODCAST_FEED, {
+      headers: {
+        'content-type': 'application/rss+xml',
+        'content-length': String(7 * 1024 * 1024),
+      },
+    })) as typeof fetch });
+
+    await expect(adapter.discover(source)).resolves.toHaveLength(1);
+  });
+
   it('extracts an article body in memory', async () => {
     const fetcher = vi.fn(async () => new Response(`
       <html><body><nav>menu noise</nav><article>
@@ -100,6 +111,24 @@ describe('RssAdapter', () => {
     const content = await adapter.fetch(item, { workspace: '/unused' });
     expect(content.provenance).toBe('shownotes');
     expect(content.rawText.length).toBeGreaterThan(300);
+  });
+
+  it('uses server-rendered article text as podcast show notes without a site-specific branch', async () => {
+    const notes = '节目背景、嘉宾信息与时间线。'.repeat(80);
+    const adapter = new RssAdapter({ fetcher: async () => new Response(
+      `<html><body><nav>menu noise</nav><article><p>${notes}</p></article><footer>footer noise</footer></body></html>`,
+      { headers: { 'content-type': 'text/html' } },
+    ) });
+
+    const content = await adapter.fetch({
+      externalId: 'fireside-1', url: 'https://example.com/fireside-1', title: 'Podcast episode',
+      publishedAt: null, mediaType: 'podcast', languageHint: 'zh',
+    }, { workspace: '/unused' });
+
+    expect(content).toMatchObject({ language: 'zh', provenance: 'shownotes' });
+    expect(content.rawText).toContain('节目背景、嘉宾信息与时间线');
+    expect(content.rawText).not.toContain('menu noise');
+    expect(content.rawText).not.toContain('footer noise');
   });
 
   it('没有可用 show notes 时仍然判 needs_body', async () => {

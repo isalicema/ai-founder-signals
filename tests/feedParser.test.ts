@@ -39,6 +39,22 @@ describe('parseFeed', () => {
     });
   });
 
+  it('keeps the first text value when namespace removal merges duplicate title tags', () => {
+    const [item] = parseFeed(`<?xml version="1.0"?>
+      <rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
+        <channel><item>
+          <title>180: RSS 标题</title><itunes:title>iTunes 标题</itunes:title>
+          <link>https://example.com/episodes/180</link><guid>episode-180</guid>
+        </item></channel>
+      </rss>`, {
+      sourceUrl: 'https://example.com/feed.xml',
+      forcedMediaType: 'podcast',
+      languageHint: 'zh',
+    });
+
+    expect(item?.title).toBe('180: RSS 标题');
+  });
+
   it('rejects valid XML that is not a supported feed', () => {
     expect(() => parseFeed('<document><item>no channel</item></document>', {
       sourceUrl: 'https://example.com/not-feed.xml',
