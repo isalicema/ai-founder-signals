@@ -18,7 +18,7 @@ if [[ -z "$NODE" ]]; then
   NODE=$(ls -d "$HOME"/.nvm/versions/node/*/bin/node 2>/dev/null | sort -V | tail -1)
 fi
 [[ -n "$NODE" ]] && export PATH="$(dirname "$NODE"):$PATH"
-export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"
+export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:$PATH"
 
 cd "$PROJECT" || { echo "找不到项目目录 $PROJECT"; exit 1; }
 
