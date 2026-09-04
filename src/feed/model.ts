@@ -97,6 +97,9 @@ export function applyLocalFeedAction(items: FeedItemView[], action: FeedItemActi
         return { ...item, archiveRequestedAt: item.archiveRequestedAt ?? action.at };
       case 'irrelevant':
         return { ...item, tier: 'folded', readAt: item.readAt ?? action.at };
+      case 'restore_highlight':
+        // 从低分抽屉恢复意味着重新放回待处理收件箱，不能沿用普通点赞的「处理完成」语义。
+        return { ...item, tier: 'highlight', readAt: null };
       case 'set_highlight':
         return {
           ...item,

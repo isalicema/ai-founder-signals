@@ -56,12 +56,14 @@ describe('M5 feed model', () => {
     expect(demoted.find((item) => item.id === 'demo-perplexity-video')?.tier).toBe('folded');
 
     const restored = applyLocalFeedAction(demoted, {
-      type: 'set_highlight',
+      type: 'restore_highlight',
       itemId: 'demo-perplexity-video',
-      highlighted: true,
       at,
     });
     expect(restored.find((item) => item.id === 'demo-perplexity-video')?.tier).toBe('highlight');
+    expect(restored.find((item) => item.id === 'demo-perplexity-video')?.readAt).toBeNull();
+    expect(unreadFeedItems(restored).some((item) => item.id === 'demo-perplexity-video')).toBe(true);
+    expect(splitFeed(unreadFeedItems(restored), EMPTY_FILTERS).visible.some((item) => item.id === 'demo-perplexity-video')).toBe(true);
 
     const unhighlighted = applyLocalFeedAction(restored, {
       type: 'set_highlight',

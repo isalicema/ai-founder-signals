@@ -679,7 +679,7 @@ function FoldedRow({
         <p>{item.sourceName} · {item.rejectReason ?? '低分信号'}</p>
         <span>🤖 AI 摘要 · 未生成</span>
       </div>
-      <button type="button" onClick={() => onAction({ type: 'set_highlight', itemId: item.id, highlighted: true, at: actionAt() }, '已恢复并置为高亮')}>↑ 恢复高亮</button>
+      <button type="button" onClick={() => onAction({ type: 'restore_highlight', itemId: item.id, at: actionAt() }, '已恢复并置为高亮')}>↑ 恢复高亮</button>
     </article>
   );
 }

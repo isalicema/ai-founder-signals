@@ -109,6 +109,13 @@ export const SEED_SOURCES: NewSource[] = [
     //    「17 岁 ICML 少年」，都不是创始人访谈。体裁纯但对象不全是创始人。
   },
   {
+    name: '42章经',
+    url: 'https://www.xiaoyuzhoufm.com/podcast/648b0b641c48983391a63f98',
+    country: 'CN', language: 'zh', ingestMethod: 'podcast', fetchMode: 'full', purity: 0.6,
+    // ✅ PodcastAdapter 实测发现 15 条，标题、发布时间、时长与 show notes 均可用。
+    //    AI 创始人、研究员和投资人内容混合，保留 L2 身份判定，不走高纯度直通。
+  },
+  {
     name: '跨国串门计划',
     url: 'https://www.xiaoyuzhoufm.com/podcast/670f3da40d2f24f28978736f',
     country: 'CN', language: 'zh', ingestMethod: 'podcast', fetchMode: 'full', purity: 0.7,
@@ -162,9 +169,9 @@ export const SEED_SOURCES: NewSource[] = [
   },
   {
     name: 'Lex Fridman',
-    url: 'https://www.youtube.com/feeds/videos.xml?channel_id=UCJIfeSCssxSC_Dhc5s7woww',
+    url: 'https://www.youtube.com/feeds/videos.xml?channel_id=UCSHZKyawb77ixDdsGog4iWA',
     country: 'US', language: 'en', ingestMethod: 'youtube', fetchMode: 'full', purity: 0.3,
-    // ⚠️ 体裁纯度 0.95，但嘉宾横跨物理/政治/哲学；且频道大量发布正片切片（Clips），
-    //    去重 L1/L2 挡不住切片（URL 和内容都不同）——观察是否需要按标题过滤 Clips
+    // 只订阅主频道长视频；不要使用 Lex Clips（UCJIfeSCssxSC_Dhc5s7woww），
+    // 否则同一场访谈会以大量不同 URL 的切片反复进入 Feed。
   },
 ];
