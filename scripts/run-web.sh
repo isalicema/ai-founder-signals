@@ -6,18 +6,33 @@
 set -u
 # 从脚本自身位置推出项目根，别写死路径——克隆到任何目录都能用
 PROJECT="${0:A:h:h}"
-# node 三级探测：launchd 的 shell 不加载 ~/.zshrc，nvm.sh 也可能不存在。
-# 形式参考 kimi work/api-usage-board/serve.command——比只 source nvm.sh 稳。
-NODE=$(command -v node 2>/dev/null || true)
-if [[ -z "$NODE" && -s "$HOME/.nvm/nvm.sh" ]]; then
+# 项目 engines 明确要求 Node 22。优先使用 ARM Homebrew 的稳定 opt 路径；
+# nvm 与旧 /usr/local Node 只作为回退，且必须同样通过主版本检查。
+NODE=""
+ARM_NODE="/opt/homebrew/opt/node@22/bin/node"
+if [[ -x "$ARM_NODE" ]]; then
+  NODE="$ARM_NODE"
+elif [[ -s "$HOME/.nvm/nvm.sh" ]]; then
   source "$HOME/.nvm/nvm.sh" >/dev/null 2>&1
-  NODE=$(command -v node 2>/dev/null || true)
+  NVM_NODE=$(nvm which 22 2>/dev/null || true)
+  [[ -x "$NVM_NODE" ]] && NODE="$NVM_NODE"
 fi
 if [[ -z "$NODE" ]]; then
-  NODE=$(ls -d "$HOME"/.nvm/versions/node/*/bin/node 2>/dev/null | sort -V | tail -1)
+  CANDIDATE_NODE=$(command -v node 2>/dev/null || true)
+  if [[ -x "$CANDIDATE_NODE" && "$($CANDIDATE_NODE -p 'process.versions.node.split(".")[0]' 2>/dev/null)" == "22" ]]; then
+    NODE="$CANDIDATE_NODE"
+  fi
 fi
-[[ -n "$NODE" ]] && export PATH="$(dirname "$NODE"):$PATH"
-export PATH="/usr/local/bin:/opt/homebrew/bin:$PATH"
+if [[ -z "$NODE" && -x /usr/local/bin/node ]]; then
+  if [[ "$(/usr/local/bin/node -p 'process.versions.node.split(".")[0]' 2>/dev/null)" == "22" ]]; then
+    NODE="/usr/local/bin/node"
+  fi
+fi
+if [[ -z "$NODE" ]]; then
+  echo "找不到符合 engines 要求的 Node.js 22"
+  exit 1
+fi
+export PATH="$(dirname "$NODE"):/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:$PATH"
 cd "$PROJECT" || exit 1
 
 # ⚠️ 只启服务，不在这里做「源码变了就重建」。
