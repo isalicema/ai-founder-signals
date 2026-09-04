@@ -6,30 +6,35 @@
 set -u
 # 从脚本自身位置推出项目根，别写死路径——克隆到任何目录都能用
 PROJECT="${0:A:h:h}"
-# 项目 engines 明确要求 Node 22。优先使用 ARM Homebrew 的稳定 opt 路径；
-# nvm 与旧 /usr/local Node 只作为回退，且必须同样通过主版本检查。
+# engines 要求 Node >= 24（2026-09-05 从 ">=22 <23" 改过来）。
+# ⚠️ 别改回 22：package-lock.json 由 npm 11 生成，而 node@22 自带的是 npm 10，
+#    读不懂这份 lock —— `npm ci` 会报 "Missing: esbuild@0.28.2 from lock file"。
+#    CI 在 2026-08-31 就是栽在这上面，查了很久才定位到是 npm 大版本差异。
+# 版本校验（主版本 >= 24）保留星子的写法，只是把目标版本改对。
+node_major() { "$1" -p 'process.versions.node.split(".")[0]' 2>/dev/null; }
+node_ok()    { [[ -x "$1" ]] && [[ "$(node_major "$1")" -ge 24 ]] 2>/dev/null; }
+
 NODE=""
-ARM_NODE="/opt/homebrew/opt/node@22/bin/node"
-if [[ -x "$ARM_NODE" ]]; then
-  NODE="$ARM_NODE"
-elif [[ -s "$HOME/.nvm/nvm.sh" ]]; then
+# ① nvm 优先：与 run-worker.sh 同源，也是 Alice 日常 shell 用的那个
+if [[ -s "$HOME/.nvm/nvm.sh" ]]; then
   source "$HOME/.nvm/nvm.sh" >/dev/null 2>&1
-  NVM_NODE=$(nvm which 22 2>/dev/null || true)
-  [[ -x "$NVM_NODE" ]] && NODE="$NVM_NODE"
+  NVM_NODE=$(ls -d "$HOME"/.nvm/versions/node/*/bin/node 2>/dev/null | sort -V | tail -1)
+  node_ok "$NVM_NODE" && NODE="$NVM_NODE"
 fi
+# ② PATH 里的
 if [[ -z "$NODE" ]]; then
   CANDIDATE_NODE=$(command -v node 2>/dev/null || true)
-  if [[ -x "$CANDIDATE_NODE" && "$($CANDIDATE_NODE -p 'process.versions.node.split(".")[0]' 2>/dev/null)" == "22" ]]; then
-    NODE="$CANDIDATE_NODE"
-  fi
+  node_ok "$CANDIDATE_NODE" && NODE="$CANDIDATE_NODE"
 fi
-if [[ -z "$NODE" && -x /usr/local/bin/node ]]; then
-  if [[ "$(/usr/local/bin/node -p 'process.versions.node.split(".")[0]' 2>/dev/null)" == "22" ]]; then
-    NODE="/usr/local/bin/node"
-  fi
+# ③ brew 的（注意 /opt/homebrew/bin/node 目前是 22.x，会被上面的校验挡掉，这是对的）
+if [[ -z "$NODE" ]]; then
+  for c in /opt/homebrew/bin/node /usr/local/bin/node; do
+    node_ok "$c" && { NODE="$c"; break; }
+  done
 fi
 if [[ -z "$NODE" ]]; then
-  echo "找不到符合 engines 要求的 Node.js 22"
+  echo "找不到符合 engines 要求的 Node.js（需 >= 24）"
+  echo "  提示：nvm install 24 && nvm alias default 24"
   exit 1
 fi
 export PATH="$(dirname "$NODE"):/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:$PATH"

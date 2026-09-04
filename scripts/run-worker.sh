@@ -17,8 +17,13 @@ fi
 if [[ -z "$NODE" ]]; then
   NODE=$(ls -d "$HOME"/.nvm/versions/node/*/bin/node 2>/dev/null | sort -V | tail -1)
 fi
-[[ -n "$NODE" ]] && export PATH="$(dirname "$NODE"):$PATH"
+# ⚠️ 顺序要紧：brew 路径先加，node 目录**最后**前置。
+#    反过来写的话，上面 9 行三级探测就白做了——brew 自带的 node（v22.x）会盖掉
+#    nvm 的 v24.19.0。2026-09-05 实测就是这样：日志显示 node v22.14.0，
+#    而 nvm 里只装了 v24.19.0。同一天在 CI（node 22 vs 24）和 Homebrew 的
+#    path_helper 上各踩过一次，是同一个形状：精心构造的 PATH 被后一行随手盖掉。
 export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:$PATH"
+[[ -n "$NODE" ]] && export PATH="$(dirname "$NODE"):$PATH"
 
 cd "$PROJECT" || { echo "找不到项目目录 $PROJECT"; exit 1; }
 
@@ -33,6 +38,9 @@ command -v yt-dlp >/dev/null || echo "⚠️ 找不到 yt-dlp，YouTube 字幕�
 echo "node $(node -v) · yt-dlp $(yt-dlp --version 2>/dev/null || echo 无)"
 
 npx tsx tools/worker.ts --max-jobs "${AFS_MAX_JOBS:-200}" --budget-min "${AFS_BUDGET_MIN:-25}"
-status=$?
-echo "───────── $(date '+%Y-%m-%d %H:%M:%S') 结束（退出码 $status）─────────"
-exit $status
+# ⚠️ 变量名不能叫 status：launchd 用 `zsh -lc` 跑本脚本，而 zsh 里 $status 是
+#    只读特殊变量（等价 $?），赋值会直接中断脚本 → 「结束」那行从不打印，
+#    worker 的真实退出码被吞掉，job 恒报退出码 1。真失败和假失败会长得一模一样。
+rc=$?
+echo "───────── $(date '+%Y-%m-%d %H:%M:%S') 结束（退出码 $rc）─────────"
+exit $rc
