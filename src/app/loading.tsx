@@ -19,12 +19,14 @@ export default function Loading() {
         </div>
         <div className="masthead-rule" />
         <div className="masthead-main">
-          <p className="overline">MACHIWHALE INTELLIGENCE DESK</p>
-          <h1>
-            AI Founder
-            <em>Signals</em>
-          </h1>
-          <p className="skeleton-note">正在读取今天的信号…</p>
+          <div>
+            <p className="overline">MACHIWHALE INTELLIGENCE DESK</p>
+            <h1>
+              AI Founder<br />
+              <em>Signals</em>
+            </h1>
+            <p className="skeleton-note">正在读取今天的信号…</p>
+          </div>
         </div>
       </div>
 
