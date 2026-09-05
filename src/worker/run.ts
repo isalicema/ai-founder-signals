@@ -143,6 +143,21 @@ export function classify(error: unknown): string {
   return 'unclassified_error';
 }
 
-function today(): string {
-  return new Date().toISOString().slice(0, 10);
+/**
+ * 排队幂等键用的「今天」——**必须是北京时间的日期**。
+ *
+ * ⚠️ 2026-09-05 踩过：原本写 `new Date().toISOString()`，那是 UTC 日期。
+ *    而 launchd 在**北京时间 06:00** 调起 worker，此刻 UTC 还是前一天 22:00，
+ *    于是每天早晨的定时跑，用的都是「昨天」的键。
+ *
+ *    后果不是当天报错，而是**静默空跑**：任何在北京白天（08:00 之后）
+ *    跑过的手动运行，都会把次日 06:00 的键提前占掉，第二天早上
+ *    `已排 0 个 discover 任务 · 认领 0 · 退出码 0` —— 一切看起来都正常，
+ *    只是 feed 里没有新信号。实测就是这么发现的（Alice 问「怎么没新信号」）。
+ *
+ *    中国大陆无夏令时，固定 +8 即可，不必引 Intl 依赖。
+ */
+export function today(): string {
+  const BEIJING_OFFSET_MS = 8 * 60 * 60 * 1000;
+  return new Date(Date.now() + BEIJING_OFFSET_MS).toISOString().slice(0, 10);
 }

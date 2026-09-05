@@ -9,13 +9,35 @@ PROJECT="${0:A:h:h}"
 
 # node 三级探测：launchd 的 shell 不加载 ~/.zshrc，nvm.sh 也可能不存在。
 # 形式参考 kimi work/api-usage-board/serve.command——比只 source nvm.sh 稳。
-NODE=$(command -v node 2>/dev/null || true)
-if [[ -z "$NODE" && -s "$HOME/.nvm/nvm.sh" ]]; then
+# ⚠️ 每一级都要校验主版本，不能「找到就用」。
+#    2026-09-05 实测：launchd 的 PATH 含 /usr/local/bin，那儿躺着一个独立的
+#    node v22.14.0，`command -v node` 第一步就命中它，于是后面的 nvm 分支
+#    根本不会执行 —— 日志里显示 node v22.14.0，而 engines 要求 >=24。
+node_major() { "$1" -p 'process.versions.node.split(".")[0]' 2>/dev/null; }
+node_ok()    { [[ -x "$1" ]] && [[ "$(node_major "$1")" -ge 24 ]] 2>/dev/null; }
+
+NODE=""
+# ① nvm 优先（Alice 日常 shell 用的就是这个，与 run-web.sh 同源）
+if [[ -s "$HOME/.nvm/nvm.sh" ]]; then
   source "$HOME/.nvm/nvm.sh" >/dev/null 2>&1
-  NODE=$(command -v node 2>/dev/null || true)
+  CAND=$(ls -d "$HOME"/.nvm/versions/node/*/bin/node 2>/dev/null | sort -V | tail -1)
+  node_ok "$CAND" && NODE="$CAND"
+fi
+# ② PATH 里的（必须过版本校验）
+if [[ -z "$NODE" ]]; then
+  CAND=$(command -v node 2>/dev/null || true)
+  node_ok "$CAND" && NODE="$CAND"
+fi
+# ③ brew / 系统里的兜底（同样要过校验）
+if [[ -z "$NODE" ]]; then
+  for c in /opt/homebrew/bin/node /usr/local/bin/node; do
+    node_ok "$c" && { NODE="$c"; break; }
+  done
 fi
 if [[ -z "$NODE" ]]; then
-  NODE=$(ls -d "$HOME"/.nvm/versions/node/*/bin/node 2>/dev/null | sort -V | tail -1)
+  echo "❌ 找不到符合 engines 要求的 Node（需 >= 24）"
+  echo "   提示：nvm install 24 && nvm alias default 24"
+  exit 1
 fi
 # ⚠️ 顺序要紧：brew 路径先加，node 目录**最后**前置。
 #    反过来写的话，上面 9 行三级探测就白做了——brew 自带的 node（v22.x）会盖掉
