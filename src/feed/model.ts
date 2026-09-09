@@ -32,6 +32,8 @@ export function sortFeedItems(items: FeedItemView[]): FeedItemView[] {
     if (unread !== 0) return unread;
     const tier = tierRank[a.tier] - tierRank[b.tier];
     if (tier !== 0) return tier;
+    const quality = (b.tierScore ?? 0) - (a.tierScore ?? 0);
+    if (quality !== 0) return quality;
     return Date.parse(b.firstSeenAt) - Date.parse(a.firstSeenAt);
   });
 }
@@ -130,15 +132,12 @@ export function applyLocalFeedAction(items: FeedItemView[], action: FeedItemActi
         return { ...item, archiveRequestedAt: item.archiveRequestedAt ?? action.at };
       case 'irrelevant':
         return { ...item, tier: 'folded', readAt: item.readAt ?? action.at };
-      case 'restore_highlight':
-        // 从低分抽屉恢复意味着重新放回待处理收件箱，不能沿用普通点赞的「处理完成」语义。
-        return { ...item, tier: 'highlight', readAt: null };
-      case 'set_highlight':
-        return {
-          ...item,
-          tier: action.highlighted ? 'highlight' : 'feed',
-          readAt: action.highlighted ? item.readAt ?? action.at : item.readAt,
-        };
+      case 'restore_signal':
+        // 人工纠错只恢复到 Signal Stream；是否高亮仍由固定质量线决定。
+        return { ...item, tier: 'feed', readAt: null };
+      case 'great':
+        // 正反馈只写 feedback，不改变质量分档、已读状态或页面位置。
+        return item;
     }
   });
 }

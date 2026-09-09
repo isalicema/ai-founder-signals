@@ -47,11 +47,11 @@ export const WEIGHTS = {
 /** 到这个字数就算「完整一场」。实测完整访谈 15k-55k 字，切片 1k-2k 字 */
 export const FULL_LENGTH_CHARS = 20_000;
 
-/** 低于这条线的直接折叠。高亮不再用绝对分数，见 pickHighlights */
+/** 低于这条线的直接折叠；达到后进入 Signal Stream。 */
 export const FOLD_BELOW = 0.35;
 
-/** 每天高亮几场。绝对门槛会「有的天 0 条、有的天 20 条」，相对排名每天都有意义 */
-export const HIGHLIGHT_COUNT = 3;
+/** 高亮是稀缺的质量标记，不是必须填满的展示席位。 */
+export const HIGHLIGHT_AT = 0.65;
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
@@ -66,29 +66,17 @@ export function scoreTier(input: TierInput): TierResult {
   return { score, reason: parts };
 }
 
-/** 入库时只判「够不够格进 feed」；高亮是展示时按当天排名决定的 */
+/** 入库时只判「够不够格进 Signal Stream」；高亮在展示时由固定质量线派生。 */
 export function initialTier(score: number): Tier {
   return score >= FOLD_BELOW ? 'feed' : 'folded';
 }
 
 /**
- * 从当天可见条目里挑出高亮。
- *
- * 为什么不用绝对门槛：实测最高分 0.64、门槛 0.65 → 一条都不高亮；
- * 门槛降到 0.55 又可能哪天冒出二十条。对每天都看的 feed，
- * 「今天最值得先看的 3 场」永远有意义，「分数超过某个数」看运气。
+ * 将数据库里的工作流 tier 转成页面呈现 tier。
+ * folded 永远留在低分抽屉；其余信号只有达到固定质量线才显示为高亮。
+ * 历史手动写入的 highlight 不再越过质量线，避免用户反馈与算法标签混用。
  */
-export function pickHighlights<T extends { id: string; tierScore: number | null; tier: Tier }>(
-  items: T[],
-  count = HIGHLIGHT_COUNT,
-): Set<string> {
-  return new Set(
-    [...items]
-      // ⚠️ 必须先排除 folded，光看分数不够——被拒条目也有分数，
-      //    而且拒绝判得越准分越高。实测把两条「受访者不是创始人」顶进了高亮。
-      .filter((item) => item.tier !== 'folded' && (item.tierScore ?? 0) >= FOLD_BELOW)
-      .sort((a, b) => (b.tierScore ?? 0) - (a.tierScore ?? 0))
-      .slice(0, count)
-      .map((item) => item.id),
-  );
+export function displayTier(item: { tier: Tier; tierScore: number | null }): Tier {
+  if (item.tier === 'folded') return 'folded';
+  return (item.tierScore ?? 0) >= HIGHLIGHT_AT ? 'highlight' : 'feed';
 }

@@ -356,7 +356,7 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
               <span className="folded-mark" aria-hidden="true">↓</span>
               <span>
                 <strong>还有 {folded.length} 条低分内容</strong>
-                <small>没有丢弃，只是折叠。展开后仍可恢复高亮。</small>
+                <small>没有丢弃，只是折叠。展开后仍可恢复到 Signal Stream。</small>
               </span>
               <span className="folded-action">
                 <span className="folded-action-open">展开查看</span>
@@ -739,18 +739,14 @@ function SignalCard({
           <span className="action-spacer" />
           <button
             type="button"
-            className={`icon-action ${item.tier === 'highlight' ? 'is-active' : ''}`}
-            aria-label={item.tier === 'highlight' ? '取消好内容标记' : '这是好内容，置为高亮'}
-            aria-pressed={item.tier === 'highlight'}
-            title={item.tier === 'highlight' ? '取消好内容标记' : '好内容'}
+            className="icon-action"
+            aria-label="这条内容很好"
+            title="好内容"
             disabled={pending}
-            onClick={() => {
-              const highlighted = item.tier !== 'highlight';
-              onAction(
-                { type: 'set_highlight', itemId: item.id, highlighted, at: actionAt() },
-                highlighted ? '已置为高亮' : '已取消高亮',
-              );
-            }}
+            onClick={() => onAction(
+              { type: 'great', itemId: item.id, at: actionAt() },
+              '已记录为好内容',
+            )}
           ><span className="action-glyph" aria-hidden="true">👍</span></button>
           <button
             type="button"
@@ -826,18 +822,14 @@ function ConversationClip({
           <span className="clip-action-spacer" />
           <button
             type="button"
-            className={`clip-icon-action ${item.tier === 'highlight' ? 'is-active' : ''}`}
-            aria-label={item.tier === 'highlight' ? '取消好内容标记' : '这是好内容，置为高亮'}
-            aria-pressed={item.tier === 'highlight'}
-            title={item.tier === 'highlight' ? '取消好内容标记' : '好内容'}
+            className="clip-icon-action"
+            aria-label="这条内容很好"
+            title="好内容"
             disabled={pending}
-            onClick={() => {
-              const highlighted = item.tier !== 'highlight';
-              onAction(
-                { type: 'set_highlight', itemId: item.id, highlighted, at: actionAt() },
-                highlighted ? '已置为高亮' : '已取消高亮',
-              );
-            }}
+            onClick={() => onAction(
+              { type: 'great', itemId: item.id, at: actionAt() },
+              '已记录为好内容',
+            )}
           ><span className="action-glyph" aria-hidden="true">👍</span></button>
           <button
             type="button"
@@ -869,7 +861,7 @@ function FoldedRow({
         <p>{item.sourceName} · {item.rejectReason ?? '低分信号'}</p>
         <span>🤖 AI 摘要 · 未生成</span>
       </div>
-      <button type="button" onClick={() => onAction({ type: 'restore_highlight', itemId: item.id, at: actionAt() }, '已恢复并置为高亮')}>↑ 恢复高亮</button>
+      <button type="button" onClick={() => onAction({ type: 'restore_signal', itemId: item.id, at: actionAt() }, '已恢复为普通信号')}>↑ 恢复信号</button>
     </article>
   );
 }

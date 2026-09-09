@@ -2,7 +2,7 @@ import { desc, eq, gte, isNotNull, isNull } from 'drizzle-orm';
 import { sharedDb } from '../db/shared';
 import { entities, items, sources } from '../db/schema';
 import { createDemoFeed } from './demo';
-import { pickHighlights } from '../pipeline/tier/index';
+import { displayTier } from '../pipeline/tier/index';
 import type {
   FeedEntityRef,
   FeedItemView,
@@ -103,13 +103,7 @@ export async function loadFeed(): Promise<FeedPayload> {
     ]));
     const mentionCounts = countMentions(recentRows);
 
-    // 高亮不再用绝对分数——「未读池最值得先看的 N 场」始终有意义，
-    // 「分数超过某个数」看运气（实测过：最高 0.64、门槛 0.65 → 一条都没有）
-    const highlighted = pickHighlights(
-      rows.map((row) => ({ id: row.id, tierScore: row.tierScore, tier: tier(row.tier) })),
-    );
-
-    const toFeedItem = (row: (typeof rows)[number], highlightIds = new Set<string>()): FeedItemView => {
+    const toFeedItem = (row: (typeof rows)[number]): FeedItemView => {
       const persons = row.persons ?? [];
       const companies = row.companies ?? [];
       const itemEntities: FeedEntityRef[] = [
@@ -140,7 +134,8 @@ export async function loadFeed(): Promise<FeedPayload> {
         persons,
         companies,
         entities: itemEntities,
-        tier: highlightIds.has(row.id) ? 'highlight' : tier(row.tier),
+        tierScore: row.tierScore,
+        tier: displayTier({ tier: tier(row.tier), tierScore: row.tierScore }),
         readAt: row.readAt?.toISOString() ?? null,
         archiveRequestedAt: row.archiveRequestedAt?.toISOString() ?? null,
         archivedAt: row.archivedAt?.toISOString() ?? null,
@@ -154,7 +149,7 @@ export async function loadFeed(): Promise<FeedPayload> {
     };
 
     return {
-      items: rows.map((row) => toFeedItem(row, highlighted)),
+      items: rows.map((row) => toFeedItem(row)),
       history: historyRows.map((row) => toFeedItem(row)),
       obsidianVaultName: process.env.AFS_OBSIDIAN_VAULT_NAME?.trim() || null,
       generatedAt: new Date().toISOString(),

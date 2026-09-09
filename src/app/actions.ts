@@ -49,16 +49,11 @@ export async function applyFeedAction(action: FeedItemAction): Promise<FeedActio
         } else if (action.type === 'irrelevant') {
           await transaction.update(items).set({ tier: 'folded', readAt: at }).where(eq(items.id, action.itemId));
           await transaction.insert(feedback).values({ itemId: action.itemId, signal: 'irrelevant' });
-        } else if (action.type === 'restore_highlight') {
-          await transaction.update(items).set({ tier: 'highlight', readAt: null }).where(eq(items.id, action.itemId));
+        } else if (action.type === 'restore_signal') {
+          await transaction.update(items).set({ tier: 'feed', readAt: null }).where(eq(items.id, action.itemId));
           await transaction.insert(feedback).values({ itemId: action.itemId, signal: 'great' });
-        } else if (action.type === 'set_highlight') {
-          await transaction.update(items).set(
-            action.highlighted ? { tier: 'highlight', readAt: at } : { tier: 'feed' },
-          ).where(eq(items.id, action.itemId));
-          if (action.highlighted) {
-            await transaction.insert(feedback).values({ itemId: action.itemId, signal: 'great' });
-          }
+        } else if (action.type === 'great') {
+          await transaction.insert(feedback).values({ itemId: action.itemId, signal: 'great' });
         }
       });
     }

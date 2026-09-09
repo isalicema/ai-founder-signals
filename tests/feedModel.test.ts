@@ -38,9 +38,12 @@ describe('M5 feed model', () => {
     expect(splitFeed(demo, EMPTY_FILTERS).folded).toHaveLength(2);
   });
 
-  it('keeps unread before read, then highlight before regular feed', () => {
+  it('keeps unread before read, then orders each signal tier by quality score', () => {
     const sorted = sortFeedItems(demo.filter((item) => item.tier !== 'folded'));
     expect(sorted.slice(0, 2).every((item) => item.tier === 'highlight')).toBe(true);
+    expect(sorted[0]!.tierScore).toBeGreaterThan(sorted[1]!.tierScore!);
+    const regular = sorted.filter((item) => item.tier === 'feed' && !item.readAt);
+    expect(regular.map((item) => item.tierScore)).toEqual([0.62, 0.55]);
     expect(sorted.at(-1)?.readAt).not.toBeNull();
   });
 
@@ -62,30 +65,31 @@ describe('M5 feed model', () => {
     expect(unreadFeedItems(opened).some((item) => item.id === target.id)).toBe(true);
   });
 
-  it('moves feedback actions through tiers and keeps folded content recoverable', () => {
+  it('keeps quality feedback separate from tiers and restores folded content as a regular signal', () => {
     const at = now.toISOString();
     const demoted = applyLocalFeedAction(demo, { type: 'irrelevant', itemId: 'demo-perplexity-video', at });
     expect(demoted.find((item) => item.id === 'demo-perplexity-video')?.tier).toBe('folded');
 
     const restored = applyLocalFeedAction(demoted, {
-      type: 'restore_highlight',
+      type: 'restore_signal',
       itemId: 'demo-perplexity-video',
       at,
     });
-    expect(restored.find((item) => item.id === 'demo-perplexity-video')?.tier).toBe('highlight');
+    expect(restored.find((item) => item.id === 'demo-perplexity-video')?.tier).toBe('feed');
     expect(restored.find((item) => item.id === 'demo-perplexity-video')?.readAt).toBeNull();
     expect(unreadFeedItems(restored).some((item) => item.id === 'demo-perplexity-video')).toBe(true);
     expect(splitFeed(unreadFeedItems(restored), EMPTY_FILTERS).visible.some((item) => item.id === 'demo-perplexity-video')).toBe(true);
 
-    const unhighlighted = applyLocalFeedAction(restored, {
-      type: 'set_highlight',
+    const praised = applyLocalFeedAction(restored, {
+      type: 'great',
       itemId: 'demo-perplexity-video',
-      highlighted: false,
       at,
     });
-    expect(unhighlighted.find((item) => item.id === 'demo-perplexity-video')?.tier).toBe('feed');
+    expect(praised.find((item) => item.id === 'demo-perplexity-video')).toEqual(
+      restored.find((item) => item.id === 'demo-perplexity-video'),
+    );
 
-    const queued = applyLocalFeedAction(unhighlighted, { type: 'archive_requested', itemId: 'demo-perplexity-video', at });
+    const queued = applyLocalFeedAction(praised, { type: 'archive_requested', itemId: 'demo-perplexity-video', at });
     expect(queued.find((item) => item.id === 'demo-perplexity-video')?.archiveRequestedAt).toBe(at);
   });
 
@@ -145,7 +149,7 @@ describe('未读收件箱的统计口径', () => {
     id, title: id, url: `https://e.com/${id}`, sourceName: 'S', country: 'US', region: '海外',
     mediaType: 'video', publishedAt: null, firstSeenAt, durationSeconds: null, contentChars: null,
     coverUrl: null, summary: null, tags: [], persons: [], companies: [], entities: [],
-    tier: 'feed', readAt: null, archiveRequestedAt: null, archivedAt: null, obsidianPath: null,
+    tierScore: 0.5, tier: 'feed', readAt: null, archiveRequestedAt: null, archivedAt: null, obsidianPath: null,
     status: 'ok', rejectReason: null,
     isNewEntity: false, monthlyMention: null, coverTone: 0, ...extra,
   });

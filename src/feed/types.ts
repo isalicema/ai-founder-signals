@@ -32,6 +32,7 @@ export interface FeedItemView {
   persons: string[];
   companies: string[];
   entities: FeedEntityRef[];
+  tierScore: number | null;
   tier: FeedTier;
   readAt: string | null;
   archiveRequestedAt: string | null;
@@ -66,8 +67,8 @@ export type FeedItemAction =
   | { type: 'opened_source'; itemId: string; at: string }
   | { type: 'archive_requested'; itemId: string; at: string }
   | { type: 'irrelevant'; itemId: string; at: string }
-  | { type: 'restore_highlight'; itemId: string; at: string }
-  | { type: 'set_highlight'; itemId: string; highlighted: boolean; at: string }
+  | { type: 'restore_signal'; itemId: string; at: string }
+  | { type: 'great'; itemId: string; at: string }
   | { type: 'set_items_read'; itemIds: string[]; readAt: string | null }
   | { type: 'toggle_entity_star'; itemId: string; entityId: string | null; entityName: string; entityKind: 'person' | 'company'; starred: boolean; at: string };
 

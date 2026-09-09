@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  scoreTier, initialTier, pickHighlights, WEIGHTS, FULL_LENGTH_CHARS, FOLD_BELOW,
+  scoreTier, initialTier, displayTier, WEIGHTS, FULL_LENGTH_CHARS, FOLD_BELOW, HIGHLIGHT_AT,
 } from '../src/pipeline/tier/index.js';
 
 const perfect = { purity: 1, titleSignal: 1, admissionConfidence: 1, contentChars: 40_000 };
@@ -67,34 +67,23 @@ describe('分档打分（2026-08-29 改版）', () => {
   });
 });
 
-describe('高亮改为当天排名', () => {
-  const feed = (id: string, tierScore: number) => ({ id, tierScore, tier: 'feed' as const });
-  const items = [feed('a', 0.64), feed('b', 0.60), feed('c', 0.55), feed('d', 0.52), feed('e', 0.20)];
-
-  it('⭐ 取当天前 3 场 —— 绝对门槛会「有的天 0 条、有的天 20 条」', () => {
-    expect([...pickHighlights(items)]).toEqual(['a', 'b', 'c']);
+describe('固定质量线高亮', () => {
+  it('⭐ 只有达到 0.65 的合格信号才高亮，不再强行凑 Top 3', () => {
+    expect(HIGHLIGHT_AT).toBe(0.65);
+    expect(displayTier({ tier: 'feed', tierScore: 0.65 })).toBe('highlight');
+    expect(displayTier({ tier: 'feed', tierScore: 0.6499 })).toBe('feed');
   });
 
-  it('折叠线以下的不参与高亮，哪怕当天条目很少', () => {
-    expect([...pickHighlights([feed('x', 0.2)])]).toEqual([]);
+  it('⭐ folded 永远留在低分抽屉，即使历史分数异常偏高', () => {
+    expect(displayTier({ tier: 'folded', tierScore: 0.9 })).toBe('folded');
   });
 
-  it('⭐ 被折叠的条目绝不参与高亮，哪怕分数很高（实测回归）', () => {
-    // 「对谈英伟达研究副总裁」「对谈投资人汪天凡」——受访者不是创始人被判 folded，
-    // 但拒绝判得很准 → 分数很高 → 曾被顶进高亮。光看分数不够，必须先排除 folded。
-    const picked = pickHighlights([
-      { id: 'rejected', tierScore: 0.73, tier: 'folded' as const },
-      feed('ok', 0.50),
-    ]);
-    expect([...picked]).toEqual(['ok']);
+  it('历史手动 highlight 不能越过固定质量线', () => {
+    expect(displayTier({ tier: 'highlight', tierScore: 0.53 })).toBe('feed');
+    expect(displayTier({ tier: 'highlight', tierScore: 0.8 })).toBe('highlight');
   });
 
-  it('条目不足 N 条时有几条算几条，不报错', () => {
-    expect(pickHighlights([feed('x', 0.9)]).size).toBe(1);
-    expect(pickHighlights([]).size).toBe(0);
-  });
-
-  it('tierScore 为 null 当 0 处理', () => {
-    expect(pickHighlights([{ id: 'x', tierScore: null, tier: 'feed' as const }]).size).toBe(0);
+  it('tierScore 为 null 时作为普通合格信号呈现', () => {
+    expect(displayTier({ tier: 'feed', tierScore: null })).toBe('feed');
   });
 });
