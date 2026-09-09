@@ -46,14 +46,13 @@ export async function applyFeedAction(action: FeedItemAction): Promise<FeedActio
         } else if (action.type === 'archive_requested') {
           await transaction.update(items).set({ archiveRequestedAt: at }).where(eq(items.id, action.itemId));
           await transaction.insert(feedback).values({ itemId: action.itemId, signal: 'archive_requested' });
-        } else if (action.type === 'irrelevant') {
-          await transaction.update(items).set({ tier: 'folded', readAt: at }).where(eq(items.id, action.itemId));
-          await transaction.insert(feedback).values({ itemId: action.itemId, signal: 'irrelevant' });
+        } else if (action.type === 'dislike') {
+          await transaction.insert(feedback).values({ itemId: action.itemId, signal: 'dislike' });
         } else if (action.type === 'restore_signal') {
           await transaction.update(items).set({ tier: 'feed', readAt: null }).where(eq(items.id, action.itemId));
-          await transaction.insert(feedback).values({ itemId: action.itemId, signal: 'great' });
-        } else if (action.type === 'great') {
-          await transaction.insert(feedback).values({ itemId: action.itemId, signal: 'great' });
+          await transaction.insert(feedback).values({ itemId: action.itemId, signal: 'restored' });
+        } else if (action.type === 'like') {
+          await transaction.insert(feedback).values({ itemId: action.itemId, signal: 'like' });
         }
       });
     }

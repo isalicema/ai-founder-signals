@@ -66,9 +66,9 @@ export interface FeedFilters {
 export type FeedItemAction =
   | { type: 'opened_source'; itemId: string; at: string }
   | { type: 'archive_requested'; itemId: string; at: string }
-  | { type: 'irrelevant'; itemId: string; at: string }
+  | { type: 'dislike'; itemId: string; at: string }
   | { type: 'restore_signal'; itemId: string; at: string }
-  | { type: 'great'; itemId: string; at: string }
+  | { type: 'like'; itemId: string; at: string }
   | { type: 'set_items_read'; itemIds: string[]; readAt: string | null }
   | { type: 'toggle_entity_star'; itemId: string; entityId: string | null; entityName: string; entityKind: 'person' | 'company'; starred: boolean; at: string };
 

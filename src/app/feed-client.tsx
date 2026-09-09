@@ -740,20 +740,21 @@ function SignalCard({
           <button
             type="button"
             className="icon-action"
-            aria-label="这条内容很好"
-            title="好内容"
+            aria-label="喜欢这条内容"
+            title="喜欢"
             disabled={pending}
             onClick={() => onAction(
-              { type: 'great', itemId: item.id, at: actionAt() },
-              '已记录为好内容',
+              { type: 'like', itemId: item.id, at: actionAt() },
+              '已记录为喜欢，不影响质量分或已读状态',
             )}
           ><span className="action-glyph" aria-hidden="true">👍</span></button>
           <button
             type="button"
             className="icon-action"
-            aria-label="这条不相关，移入低分内容"
-            title="不相关"
-            onClick={() => onAction({ type: 'irrelevant', itemId: item.id, at: actionAt() }, '已移入低分内容')}
+            aria-label="不喜欢这条内容"
+            title="不喜欢"
+            disabled={pending}
+            onClick={() => onAction({ type: 'dislike', itemId: item.id, at: actionAt() }, '已记录为不喜欢，不影响质量分或已读状态')}
           >👎</button>
         </div>
       </div>
@@ -823,20 +824,21 @@ function ConversationClip({
           <button
             type="button"
             className="clip-icon-action"
-            aria-label="这条内容很好"
-            title="好内容"
+            aria-label="喜欢这条内容"
+            title="喜欢"
             disabled={pending}
             onClick={() => onAction(
-              { type: 'great', itemId: item.id, at: actionAt() },
-              '已记录为好内容',
+              { type: 'like', itemId: item.id, at: actionAt() },
+              '已记录为喜欢，不影响质量分或已读状态',
             )}
           ><span className="action-glyph" aria-hidden="true">👍</span></button>
           <button
             type="button"
             className="clip-icon-action"
-            aria-label="这条不相关，移入低分内容"
-            title="不相关"
-            onClick={() => onAction({ type: 'irrelevant', itemId: item.id, at: actionAt() }, '已移入低分内容')}
+            aria-label="不喜欢这条内容"
+            title="不喜欢"
+            disabled={pending}
+            onClick={() => onAction({ type: 'dislike', itemId: item.id, at: actionAt() }, '已记录为不喜欢，不影响质量分或已读状态')}
           >👎</button>
         </div>
       </div>

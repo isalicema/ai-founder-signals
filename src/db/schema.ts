@@ -154,7 +154,7 @@ export const feedback = pgTable(
     index('feedback_item_created_at_idx').on(table.itemId, table.createdAt.desc()),
     check(
       'feedback_signal_check',
-      sql`${table.signal} in ('irrelevant', 'low_quality', 'great', 'opened_source', 'archive_requested')`,
+      sql`${table.signal} in ('irrelevant', 'low_quality', 'great', 'opened_source', 'archive_requested', 'like', 'dislike', 'restored')`,
     ),
   ],
 );

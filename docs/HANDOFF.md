@@ -204,7 +204,8 @@ enqueueDailyDiscover  每个启用信源一个 discover 任务（key 带日期�
 手动设的高亮/折叠永远不会被覆盖——原先那个「反馈会被 rescore 洗掉」的隐患
 随之消失，`user_signal` 列也不需要了。
 
-`feedback` 表继续只写不读，保留 `opened_source` / `archive_requested` 的自动埋点
+`feedback` 表继续只写不读：`opened_source` / `archive_requested` 记录浏览与研究意图，
+`like` / `dislike` 才记录明确偏好，`restored` 记录对折叠结果的人工纠正。它们都不自动调权。
 （行为信号比评价信号诚实），哪天想回看「常点哪些源的原文」数据是现成的。
 
 ---

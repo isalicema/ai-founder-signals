@@ -130,13 +130,12 @@ export function applyLocalFeedAction(items: FeedItemView[], action: FeedItemActi
         return item;
       case 'archive_requested':
         return { ...item, archiveRequestedAt: item.archiveRequestedAt ?? action.at };
-      case 'irrelevant':
-        return { ...item, tier: 'folded', readAt: item.readAt ?? action.at };
       case 'restore_signal':
         // 人工纠错只恢复到 Signal Stream；是否高亮仍由固定质量线决定。
         return { ...item, tier: 'feed', readAt: null };
-      case 'great':
-        // 正反馈只写 feedback，不改变质量分档、已读状态或页面位置。
+      case 'like':
+      case 'dislike':
+        // 明确偏好只写 feedback。研究价值、内容质量和是否已阅是另外三条轴。
         return item;
     }
   });

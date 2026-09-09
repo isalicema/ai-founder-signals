@@ -317,10 +317,14 @@ channel ID `UCJIfeSCssxSC_Dhc5s7woww`，导致一场 DHH 长访谈被拆成大�
 
 ### 4.19 用户反馈不再改变算法高亮
 
-普通卡片上的点赞只写入 `great` feedback，不改变 tier、`read_at` 或页面位置。
+普通卡片上的 👍 / 👎 是明确的个人偏好，只写入 `like` / `dislike` feedback，
+不改变 tier、`tier_score`、`read_at` 或页面位置。打开原文表示核实，标记深看表示值得研究；
+两者都可能出于批判性目的，不能自动算作正偏好。
 低分抽屉里的「恢复信号」用于纠正误判：将 `tier` 改为 `feed` 并清空 `read_at`，
 让内容重新进入 Signal Stream；是否显示为高亮仍只由 `tier_score >= 0.65` 决定。
-两者使用独立 action，避免用户反馈与算法质量标签再次混用。
+恢复动作写入独立的 `restored` feedback，不冒充 `like`。三类 action 分开，避免个人偏好、
+研究意图和算法质量标签再次混用。历史 `great` / `irrelevant` 只作旧版 provenance 保留，
+新界面不再写入。
 
 ### 4.20 新增三个 Fireside 播客信源
 

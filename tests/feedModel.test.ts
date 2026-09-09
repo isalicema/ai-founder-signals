@@ -65,32 +65,26 @@ describe('M5 feed model', () => {
     expect(unreadFeedItems(opened).some((item) => item.id === target.id)).toBe(true);
   });
 
-  it('keeps quality feedback separate from tiers and restores folded content as a regular signal', () => {
+  it('keeps explicit preferences separate from quality and restores folded content as a regular signal', () => {
     const at = now.toISOString();
-    const demoted = applyLocalFeedAction(demo, { type: 'irrelevant', itemId: 'demo-perplexity-video', at });
-    expect(demoted.find((item) => item.id === 'demo-perplexity-video')?.tier).toBe('folded');
+    const target = demo.find((item) => item.id === 'demo-perplexity-video')!;
+    const disliked = applyLocalFeedAction(demo, { type: 'dislike', itemId: target.id, at });
+    const liked = applyLocalFeedAction(disliked, { type: 'like', itemId: target.id, at });
+    expect(liked.find((item) => item.id === target.id)).toEqual(target);
 
-    const restored = applyLocalFeedAction(demoted, {
+    const folded = demo.find((item) => item.id === 'demo-funding-folded')!;
+    const restored = applyLocalFeedAction(demo, {
       type: 'restore_signal',
-      itemId: 'demo-perplexity-video',
+      itemId: folded.id,
       at,
     });
-    expect(restored.find((item) => item.id === 'demo-perplexity-video')?.tier).toBe('feed');
-    expect(restored.find((item) => item.id === 'demo-perplexity-video')?.readAt).toBeNull();
-    expect(unreadFeedItems(restored).some((item) => item.id === 'demo-perplexity-video')).toBe(true);
-    expect(splitFeed(unreadFeedItems(restored), EMPTY_FILTERS).visible.some((item) => item.id === 'demo-perplexity-video')).toBe(true);
+    expect(restored.find((item) => item.id === folded.id)?.tier).toBe('feed');
+    expect(restored.find((item) => item.id === folded.id)?.readAt).toBeNull();
+    expect(unreadFeedItems(restored).some((item) => item.id === folded.id)).toBe(true);
+    expect(splitFeed(unreadFeedItems(restored), EMPTY_FILTERS).visible.some((item) => item.id === folded.id)).toBe(true);
 
-    const praised = applyLocalFeedAction(restored, {
-      type: 'great',
-      itemId: 'demo-perplexity-video',
-      at,
-    });
-    expect(praised.find((item) => item.id === 'demo-perplexity-video')).toEqual(
-      restored.find((item) => item.id === 'demo-perplexity-video'),
-    );
-
-    const queued = applyLocalFeedAction(praised, { type: 'archive_requested', itemId: 'demo-perplexity-video', at });
-    expect(queued.find((item) => item.id === 'demo-perplexity-video')?.archiveRequestedAt).toBe(at);
+    const queued = applyLocalFeedAction(liked, { type: 'archive_requested', itemId: target.id, at });
+    expect(queued.find((item) => item.id === target.id)?.archiveRequestedAt).toBe(at);
   });
 
   it('stars the same entity on every visible occurrence', () => {
