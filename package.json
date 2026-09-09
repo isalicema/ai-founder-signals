@@ -2,7 +2,7 @@
   "name": "ai-founder-signals",
   "private": true,
   "type": "module",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "AI 创始人一手访谈探测器 — 深度阅读流程的前置漏斗",
   "engines": {
     "node": ">=24"
