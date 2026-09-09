@@ -1,4 +1,5 @@
 # AI Founder Signals
+当前公开版本：[v1.2.0](https://github.com/isalicema/ai-founder-signals/releases/tag/v1.2.0)
 
 AI 创始人一手访谈探测器。每天自动扫 21 个信源 → 判定是不是创始人一手访谈 →
 生成摘要卡片 → 你三十秒扫完，挑出想深看的。标记过的条目会进入深看历史，
