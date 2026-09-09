@@ -6,11 +6,12 @@
  *
  *   用户说「处理收藏队列」
  *     → npx tsx tools/archiveQueue.ts list        # 我读出待办
- *     → 逐条跑 下游深读流程（抓原文→深度分析→存 Obsidian）
- *     → npx tsx tools/archiveQueue.ts done <id>   # 回写 archived_at
+ *     → 逐条跑用户选择的深读流程（抓原文→深度分析→存入笔记系统）
+ *     → npx tsx tools/archiveQueue.ts done <id> <vault-relative-note-path>
+ *                                                  # 回写 archived_at + Obsidian 关联
  *
  * 选这个方案而不是让网页直接调本地服务：零耦合、无常驻进程、失败可重试，
- * 且天然复用已经跑通两年的 下游深读流程。
+ * 且可以复用现有的下游深读流程。
  */
 try { process.loadEnvFile(new URL('../.env.local', import.meta.url).pathname); } catch { /* 可选 */ }
 
@@ -18,7 +19,19 @@ import { and, eq, isNotNull, isNull, asc } from 'drizzle-orm';
 import { createDatabaseConnection } from '../src/db/client.js';
 import { items, sources } from '../src/db/schema.js';
 
-const [command, argument] = process.argv.slice(2);
+const [command, argument, notePathArgument] = process.argv.slice(2);
+
+function notePath(value: string | undefined): string | null {
+  if (!value) return null;
+  const normalized = value.replaceAll('\\', '/').replace(/^\.\//, '').trim();
+  if (!normalized.endsWith('.md')) {
+    throw new Error('Obsidian 路径必须指向 .md 笔记');
+  }
+  if (normalized.startsWith('/') || normalized.split('/').includes('..')) {
+    throw new Error('Obsidian 路径必须是相对 vault 的安全路径，例如 Research Notes/2026-09-04-Tolan.md');
+  }
+  return normalized;
+}
 
 if (!process.env.SUPABASE_DB_URL?.trim()) {
   console.error('❌ 缺少 SUPABASE_DB_URL，请在 .env.local 里配置');
@@ -56,41 +69,69 @@ try {
         console.log(`  ${row.url}`);
         console.log(`  标记于 ${row.requestedAt?.toISOString().slice(0, 16).replace('T', ' ')}\n`);
       }
-      console.log('处理完一条后：npx tsx tools/archiveQueue.ts done <id>');
+      console.log('处理完一条后：npx tsx tools/archiveQueue.ts done <id> "Research Notes/<note>.md"');
     }
   } else if (command === 'done') {
     if (!argument) {
-      console.error('用法：npx tsx tools/archiveQueue.ts done <item-id>');
+      console.error('用法：npx tsx tools/archiveQueue.ts done <item-id> [vault-relative-note-path]');
       process.exit(1);
     }
+    const obsidianPath = notePath(notePathArgument);
     // ⚠️ 只更新「还没归档」的，否则重复跑会静默重新盖时间戳，
     //    让人以为又处理了一遍。批量处理时最容易误判。
     const updated = await connection.db
       .update(items)
-      .set({ archivedAt: new Date() })
+      .set({ archivedAt: new Date(), ...(obsidianPath ? { obsidianPath } : {}) })
       .where(and(eq(items.id, argument), isNotNull(items.archiveRequestedAt), isNull(items.archivedAt)))
       .returning({ id: items.id, title: items.title });
 
     if (updated.length === 0) {
       const [existing] = await connection.db
-        .select({ title: items.title, archivedAt: items.archivedAt })
+        .select({ title: items.title, archivedAt: items.archivedAt, obsidianPath: items.obsidianPath })
         .from(items).where(eq(items.id, argument));
       if (existing?.archivedAt) {
-        console.log(`↩︎ 早就归档过了（${existing.archivedAt.toISOString().slice(0, 16).replace('T', ' ')}）：${existing.title}`);
+        if (obsidianPath && existing.obsidianPath !== obsidianPath) {
+          await connection.db.update(items).set({ obsidianPath }).where(eq(items.id, argument));
+          console.log(`🔗 已为既有归档补上 Obsidian 关联：${obsidianPath}`);
+        } else {
+          const linked = existing.obsidianPath ? ` · ${existing.obsidianPath}` : '';
+          console.log(`↩︎ 早就归档过了（${existing.archivedAt.toISOString().slice(0, 16).replace('T', ' ')}）：${existing.title}${linked}`);
+        }
       } else {
         console.error(`❌ 没找到待归档的条目 ${argument}（可能 id 错了，或它本来就没被标记）`);
         process.exitCode = 1;
       }
     } else {
-      console.log(`✅ 已归档：${updated[0]!.title}`);
+      console.log(`✅ 已归档：${updated[0]!.title}${obsidianPath ? `\n🔗 已关联：${obsidianPath}` : '\n⚠️ 未提供笔记路径，历史面板会显示“待关联”'}`);
+    }
+  } else if (command === 'link') {
+    if (!argument || !notePathArgument) {
+      console.error('用法：npx tsx tools/archiveQueue.ts link <item-id> <vault-relative-note-path>');
+      process.exit(1);
+    }
+    const obsidianPath = notePath(notePathArgument)!;
+    const [updated] = await connection.db
+      .update(items)
+      .set({ obsidianPath })
+      .where(and(eq(items.id, argument), isNotNull(items.archiveRequestedAt)))
+      .returning({ title: items.title });
+    if (!updated) {
+      console.error(`❌ 没找到已标记深看的条目 ${argument}`);
+      process.exitCode = 1;
+    } else {
+      console.log(`🔗 已关联 Obsidian：${updated.title}\n   ${obsidianPath}`);
     }
   } else {
     console.log(`收藏队列
 
   list          列出待处理的条目
-  done <id>     标记某条已存进你的笔记库
+  done <id> [vault-relative-note-path]
+                标记某条已存进笔记库；带路径时历史面板可直达 Obsidian
+  link <id> <vault-relative-note-path>
+                给既有归档补上或修正 Obsidian 关联
 
-用户在 feed 点「🔖 深看」后，用 list 取出待办，逐条跑 下游深读流程，再用 done 回写。`);
+用户在 feed 点「🔖 深看」后，用 list 取出待办，逐条跑下游深读流程，再用 done 回写。
+路径示例：Research Notes/2026-09-04-Tolan.md`);
   }
 } finally {
   await connection.close();

@@ -12,11 +12,14 @@ import {
 import { applyFeedAction } from './actions';
 import {
   applyLocalFeedAction,
+  deepReadStats,
   EMPTY_FILTERS,
   feedOptions,
   feedStats,
   splitFeed,
   groupConversations,
+  mergeDeepReadHistory,
+  obsidianNoteUrl,
   unreadFeedItems,
 } from '../feed/model';
 import type {
@@ -41,6 +44,7 @@ const mediaMarks: Record<FeedMediaType, string> = {
 };
 
 type FeedSkin = 'editorial' | 'aurora';
+type HistoryFilter = 'all' | 'notes' | 'pending';
 
 const skinStorageKey = 'afs-feed-skin';
 
@@ -63,10 +67,12 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
   const [filters, setFilters] = useState<FeedFilters>(EMPTY_FILTERS);
   const [notice, setNotice] = useState('');
   const [readUndoIds, setReadUndoIds] = useState<string[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const unreadItems = useMemo(() => unreadFeedItems(items), [items]);
   const options = useMemo(() => feedOptions(unreadItems), [unreadItems]);
   const stats = useMemo(() => feedStats(unreadItems), [unreadItems]);
+  const historyItems = useMemo(() => mergeDeepReadHistory(payload.history, items), [payload.history, items]);
   const { visible, folded } = useMemo(() => splitFeed(unreadItems, filters), [unreadItems, filters]);
   const activeFilters = Object.values(filters).filter(Boolean).length;
   const groups = useMemo(() => groupConversations(visible), [visible]);
@@ -86,6 +92,20 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
     }, dismissAfterMs);
     return () => window.clearTimeout(timeout);
   }, [isPending, notice, readUndoIds.length]);
+
+  useEffect(() => {
+    if (!historyOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setHistoryOpen(false);
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [historyOpen]);
 
   const updateFilter = <Key extends keyof FeedFilters>(key: Key, value: FeedFilters[Key]) => {
     setFilters((current) => ({ ...current, [key]: value }));
@@ -181,7 +201,12 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
           <Metric label="全部信号" value={stats.total} />
           <Metric label="尚未读过" value={stats.unread} accent />
           <Metric label="高亮访谈" value={stats.highlights} />
-          <Metric label="已标深看" value={stats.queued} />
+          <Metric
+            label="深看历史"
+            value={historyItems.length}
+            actionLabel={`打开深看历史，共 ${historyItems.length} 条`}
+            onAction={() => setHistoryOpen(true)}
+          />
         </dl>
       </header>
 
@@ -368,6 +393,14 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
         </small>
       </footer>
 
+      {historyOpen && (
+        <HistoryPanel
+          items={historyItems}
+          vaultName={payload.obsidianVaultName}
+          onClose={() => setHistoryOpen(false)}
+        />
+      )}
+
       <div className={`toast ${notice ? 'is-visible' : ''}`} role="status" aria-live="polite">
         <span className={`toast-dot ${isPending ? 'toast-pulse pulse' : ''}`} aria-hidden="true" />
         {notice}
@@ -417,12 +450,169 @@ function SkinSwitcher() {
   );
 }
 
-function Metric({ label, value, accent = false }: { label: string; value: number; accent?: boolean }) {
+function Metric({
+  label,
+  value,
+  accent = false,
+  actionLabel,
+  onAction,
+}: {
+  label: string;
+  value: number;
+  accent?: boolean;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
   return (
-    <div className={accent ? 'metric accent' : 'metric'}>
+    <div className={`${accent ? 'metric accent' : 'metric'} ${onAction ? 'metric-action' : ''}`}>
       <dt>{label}</dt>
       <dd>{String(value).padStart(2, '0')}</dd>
+      {onAction && (
+        <button className="metric-hitarea" type="button" aria-label={actionLabel ?? label} onClick={onAction}>
+          <span aria-hidden="true">打开 ↗</span>
+        </button>
+      )}
     </div>
+  );
+}
+
+function HistoryPanel({
+  items,
+  vaultName,
+  onClose,
+}: {
+  items: FeedItemView[];
+  vaultName: string | null;
+  onClose: () => void;
+}) {
+  const [filter, setFilter] = useState<HistoryFilter>('all');
+  const [query, setQuery] = useState('');
+  const counts = useMemo(() => deepReadStats(items), [items]);
+  const visibleItems = useMemo(() => {
+    const needle = query.trim().toLocaleLowerCase('zh-CN');
+    return items.filter((item) => {
+      if (filter === 'notes' && !item.obsidianPath) return false;
+      if (filter === 'pending' && item.archivedAt) return false;
+      if (!needle) return true;
+      return [
+        item.title,
+        item.sourceName,
+        ...item.persons,
+        ...item.companies,
+        ...item.tags,
+      ].some((value) => value.toLocaleLowerCase('zh-CN').includes(needle));
+    });
+  }, [filter, items, query]);
+
+  return (
+    <div className="history-layer" role="presentation">
+      <button className="history-backdrop" type="button" aria-label="关闭深看历史" onClick={onClose} />
+      <aside className="history-panel" role="dialog" aria-modal="true" aria-labelledby="history-title">
+        <header className="history-header">
+          <div>
+            <span className="history-kicker">03 / DEEP READ ARCHIVE</span>
+            <h2 id="history-title">深看档案</h2>
+            <p>从一眼信号，到可以反复回看的分析笔记。</p>
+          </div>
+          <button className="history-close" type="button" aria-label="关闭深看历史" onClick={onClose}>×</button>
+        </header>
+
+        <dl className="history-stats" aria-label="深看处理概览">
+          <div><dt>全部标记</dt><dd>{counts.total}</dd></div>
+          <div><dt>分析笔记</dt><dd>{counts.linked}</dd></div>
+          <div><dt>等待处理</dt><dd>{counts.pending}</dd></div>
+        </dl>
+
+        <div className="history-controls">
+          <div className="history-tabs" role="group" aria-label="筛选深看历史">
+            <HistoryTab active={filter === 'all'} onClick={() => setFilter('all')}>全部</HistoryTab>
+            <HistoryTab active={filter === 'notes'} onClick={() => setFilter('notes')}>有笔记</HistoryTab>
+            <HistoryTab active={filter === 'pending'} onClick={() => setFilter('pending')}>待处理</HistoryTab>
+          </div>
+          <label className="history-search">
+            <span aria-hidden="true">⌕</span>
+            <input
+              type="search"
+              value={query}
+              placeholder="搜人物、公司或主题"
+              aria-label="搜索深看历史"
+              onChange={(event) => setQuery(event.target.value)}
+              autoFocus
+            />
+          </label>
+        </div>
+
+        <div className="history-list" aria-live="polite">
+          {visibleItems.length > 0 ? visibleItems.map((item, index) => (
+            <HistoryRow item={item} vaultName={vaultName} index={index} key={item.id} />
+          )) : (
+            <div className="history-empty">
+              <span>∅</span>
+              <strong>{items.length ? '没有符合条件的深看记录' : '还没有深看记录'}</strong>
+              <p>{items.length ? '换个关键词，或切回“全部”。' : '在信号卡上点“深看”，它就会留在这里。'}</p>
+            </div>
+          )}
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function HistoryTab({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return <button type="button" aria-pressed={active} onClick={onClick}>{children}</button>;
+}
+
+function HistoryRow({
+  item,
+  vaultName,
+  index,
+}: {
+  item: FeedItemView;
+  vaultName: string | null;
+  index: number;
+}) {
+  const requestedAt = new Date(item.archiveRequestedAt ?? item.firstSeenAt);
+  const people = [...item.persons, ...item.companies];
+  const obsidianUrl = obsidianNoteUrl(vaultName, item.obsidianPath);
+  const state = item.obsidianPath
+    ? { className: 'is-linked', label: '分析笔记已就位' }
+    : item.archivedAt
+      ? { className: 'is-unlinked', label: '已处理 · 待关联' }
+      : { className: 'is-pending', label: '等待分析' };
+
+  return (
+    <article className="history-row" style={{ '--history-index': index } as CSSProperties}>
+      <div className="history-date" aria-label={`标记于 ${requestedAt.toLocaleDateString('zh-CN')}`}>
+        <strong>{String(requestedAt.getDate()).padStart(2, '0')}</strong>
+        <span>{requestedAt.toLocaleDateString('zh-CN', { month: 'short' })}</span>
+      </div>
+      <div className="history-copy">
+        <span className={`history-state ${state.className}`}><i aria-hidden="true" />{state.label}</span>
+        <h3>{item.title}</h3>
+        <p>{people.length ? people.join(' · ') : item.sourceName}<span>/</span>{item.sourceName}</p>
+        {item.tags.length > 0 && <small>{item.tags.slice(0, 3).map((tag) => `#${tag}`).join('  ')}</small>}
+      </div>
+      <div className="history-actions">
+        {obsidianUrl ? (
+          <a className="history-note-link" href={obsidianUrl} aria-label={`在 Obsidian 打开《${item.title}》的分析笔记`}>
+            <span aria-hidden="true">◫</span> 打开笔记
+          </a>
+        ) : item.obsidianPath ? (
+          <span className="history-note-missing">配置 Obsidian vault 后可打开</span>
+        ) : (
+          <span className="history-note-missing">{item.archivedAt ? '等待补录笔记路径' : '处理完成后出现笔记'}</span>
+        )}
+        <a className="history-source-link" href={item.url} target="_blank" rel="noreferrer">原文 ↗</a>
+      </div>
+    </article>
   );
 }
 

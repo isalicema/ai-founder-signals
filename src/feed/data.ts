@@ -1,4 +1,4 @@
-import { desc, eq, gte, isNull } from 'drizzle-orm';
+import { desc, eq, gte, isNotNull, isNull } from 'drizzle-orm';
 import { sharedDb } from '../db/shared';
 import { entities, items, sources } from '../db/schema';
 import { createDemoFeed } from './demo';
@@ -16,7 +16,34 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 /** 未读收件箱一次最多取多少条。到顶说明积压太久，该清一次而不是继续堆 */
 export const UNREAD_LIMIT = 200;
+export const HISTORY_LIMIT = 300;
 const NEW_ENTITY_WINDOW_MS = 60 * 60 * 1000;
+
+const feedItemSelection = {
+  id: items.id,
+  title: items.title,
+  url: items.url,
+  mediaType: items.mediaType,
+  publishedAt: items.publishedAt,
+  firstSeenAt: items.firstSeenAt,
+  durationSeconds: items.durationSeconds,
+  contentChars: items.contentChars,
+  coverUrl: items.coverUrl,
+  summary: items.summary,
+  tags: items.tags,
+  persons: items.persons,
+  companies: items.companies,
+  tier: items.tier,
+  tierScore: items.tierScore,
+  readAt: items.readAt,
+  archiveRequestedAt: items.archiveRequestedAt,
+  archivedAt: items.archivedAt,
+  obsidianPath: items.obsidianPath,
+  status: items.status,
+  rejectReason: items.rejectReason,
+  sourceName: sources.name,
+  country: sources.country,
+};
 
 /**
  * Database reads stay opt-in until M7 authentication lands. This keeps an
@@ -30,31 +57,9 @@ export async function loadFeed(): Promise<FeedPayload> {
 
   const connection = sharedDb();
   try {
-    const [rows, entityRows, recentRows] = await Promise.all([
+    const [rows, historyRows, entityRows, recentRows] = await Promise.all([
       connection.db
-        .select({
-          id: items.id,
-          title: items.title,
-          url: items.url,
-          mediaType: items.mediaType,
-          publishedAt: items.publishedAt,
-          firstSeenAt: items.firstSeenAt,
-          durationSeconds: items.durationSeconds,
-          contentChars: items.contentChars,
-          coverUrl: items.coverUrl,
-          summary: items.summary,
-          tags: items.tags,
-          persons: items.persons,
-          companies: items.companies,
-          tier: items.tier,
-          tierScore: items.tierScore,
-          readAt: items.readAt,
-          archiveRequestedAt: items.archiveRequestedAt,
-          status: items.status,
-          rejectReason: items.rejectReason,
-          sourceName: sources.name,
-          country: sources.country,
-        })
+        .select(feedItemSelection)
         .from(items)
         .innerJoin(sources, eq(items.sourceId, sources.id))
         .where(isNull(items.readAt))
@@ -64,6 +69,13 @@ export async function loadFeed(): Promise<FeedPayload> {
         //    既拖慢渲染，也直接违背「30 秒扫完」。
         //    到顶时前端会提示，让人去「全部标为已阅」而不是默默截断。
         .limit(UNREAD_LIMIT),
+      connection.db
+        .select(feedItemSelection)
+        .from(items)
+        .innerJoin(sources, eq(items.sourceId, sources.id))
+        .where(isNotNull(items.archiveRequestedAt))
+        .orderBy(desc(items.archiveRequestedAt))
+        .limit(HISTORY_LIMIT),
       connection.db
         .select({
           id: entities.id,
@@ -97,48 +109,54 @@ export async function loadFeed(): Promise<FeedPayload> {
       rows.map((row) => ({ id: row.id, tierScore: row.tierScore, tier: tier(row.tier) })),
     );
 
-    return {
-      items: rows.map((row) => {
-        const persons = row.persons ?? [];
-        const companies = row.companies ?? [];
-        const itemEntities: FeedEntityRef[] = [
-          ...persons.map((name) => entityRef('person', name, entityIndex)),
-          ...companies.map((name) => entityRef('company', name, entityIndex)),
-        ];
-        const firstSeenTime = row.firstSeenAt.getTime();
-        const isNewEntity = itemEntities.some((entity) => {
-          const record = entityIndex.get(`${entity.kind}:${entity.name}`);
-          return record && Math.abs(record.firstSeenAt.getTime() - firstSeenTime) <= NEW_ENTITY_WINDOW_MS;
-        });
+    const toFeedItem = (row: (typeof rows)[number], highlightIds = new Set<string>()): FeedItemView => {
+      const persons = row.persons ?? [];
+      const companies = row.companies ?? [];
+      const itemEntities: FeedEntityRef[] = [
+        ...persons.map((name) => entityRef('person', name, entityIndex)),
+        ...companies.map((name) => entityRef('company', name, entityIndex)),
+      ];
+      const firstSeenTime = row.firstSeenAt.getTime();
+      const isNewEntity = itemEntities.some((entity) => {
+        const record = entityIndex.get(`${entity.kind}:${entity.name}`);
+        return record && Math.abs(record.firstSeenAt.getTime() - firstSeenTime) <= NEW_ENTITY_WINDOW_MS;
+      });
 
-        return {
-          id: row.id,
-          title: row.title,
-          url: row.url,
-          sourceName: row.sourceName,
-          country: row.country,
-          region: row.country === 'CN' ? '国内' : '海外',
-          mediaType: mediaType(row.mediaType),
-          publishedAt: row.publishedAt?.toISOString() ?? null,
-          firstSeenAt: row.firstSeenAt.toISOString(),
-          durationSeconds: row.durationSeconds,
-          contentChars: row.contentChars,
-          coverUrl: row.coverUrl,
-          summary: row.summary,
-          tags: row.tags ?? [],
-          persons,
-          companies,
-          entities: itemEntities,
-          tier: highlighted.has(row.id) ? 'highlight' : tier(row.tier),
-          readAt: row.readAt?.toISOString() ?? null,
-          archiveRequestedAt: row.archiveRequestedAt?.toISOString() ?? null,
-          status: row.status,
-          rejectReason: row.rejectReason,
-          isNewEntity,
-          monthlyMention: strongestMention([...companies, ...persons], mentionCounts),
-          coverTone: toneFor(row.id),
-        } satisfies FeedItemView;
-      }),
+      return {
+        id: row.id,
+        title: row.title,
+        url: row.url,
+        sourceName: row.sourceName,
+        country: row.country,
+        region: row.country === 'CN' ? '国内' : '海外',
+        mediaType: mediaType(row.mediaType),
+        publishedAt: row.publishedAt?.toISOString() ?? null,
+        firstSeenAt: row.firstSeenAt.toISOString(),
+        durationSeconds: row.durationSeconds,
+        contentChars: row.contentChars,
+        coverUrl: row.coverUrl,
+        summary: row.summary,
+        tags: row.tags ?? [],
+        persons,
+        companies,
+        entities: itemEntities,
+        tier: highlightIds.has(row.id) ? 'highlight' : tier(row.tier),
+        readAt: row.readAt?.toISOString() ?? null,
+        archiveRequestedAt: row.archiveRequestedAt?.toISOString() ?? null,
+        archivedAt: row.archivedAt?.toISOString() ?? null,
+        obsidianPath: row.obsidianPath,
+        status: row.status,
+        rejectReason: row.rejectReason,
+        isNewEntity,
+        monthlyMention: strongestMention([...companies, ...persons], mentionCounts),
+        coverTone: toneFor(row.id),
+      };
+    };
+
+    return {
+      items: rows.map((row) => toFeedItem(row, highlighted)),
+      history: historyRows.map((row) => toFeedItem(row)),
+      obsidianVaultName: process.env.AFS_OBSIDIAN_VAULT_NAME?.trim() || null,
       generatedAt: new Date().toISOString(),
       mode: 'database',
     };

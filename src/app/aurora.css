@@ -1759,6 +1759,190 @@ html[data-skin="aurora"] .clip-actions > .clip-icon-action {
   padding: 0;
 }
 
+/* ---------- 深看档案 ---------- */
+
+html[data-skin="aurora"] .metric-action:hover {
+  background: rgba(215, 243, 79, 0.72);
+}
+
+html[data-skin="aurora"] .metric-hitarea {
+  color: var(--accent-deep);
+  font-family: var(--mono);
+  font-size: 0.5rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  opacity: 0.68;
+}
+
+html[data-skin="aurora"] .history-backdrop {
+  background: rgba(22, 22, 46, 0.36);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+html[data-skin="aurora"] .history-panel {
+  margin: 10px 10px 10px 0;
+  height: calc(100dvh - 20px);
+  border: 1px solid var(--glass-line);
+  border-radius: 28px;
+  background: rgba(246, 247, 253, 0.9);
+  box-shadow: -16px 0 80px rgba(31, 35, 90, 0.22);
+  backdrop-filter: blur(28px) saturate(1.35);
+  -webkit-backdrop-filter: blur(28px) saturate(1.35);
+}
+
+html[data-skin="aurora"] .history-header {
+  border-bottom-color: var(--hairline);
+}
+
+html[data-skin="aurora"] .history-kicker {
+  color: var(--accent-deep);
+  font-family: var(--mono);
+  font-weight: 600;
+}
+
+html[data-skin="aurora"] .history-header h2 {
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+}
+
+html[data-skin="aurora"] .history-header p {
+  font-family: var(--sans);
+}
+
+html[data-skin="aurora"] .history-close {
+  border-color: var(--hairline);
+  background: rgba(255, 255, 255, 0.58);
+  font-family: var(--display);
+}
+
+html[data-skin="aurora"] .history-close:hover {
+  background: var(--ink);
+}
+
+html[data-skin="aurora"] .history-stats {
+  margin: 0 16px;
+  border: 1px solid var(--glass-line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.56);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+
+html[data-skin="aurora"] .history-stats > div {
+  border-right-color: var(--hairline);
+}
+
+html[data-skin="aurora"] .history-stats dt,
+html[data-skin="aurora"] .history-stats dd {
+  font-family: var(--mono);
+}
+
+html[data-skin="aurora"] .history-controls {
+  border-bottom-color: var(--hairline);
+  background: transparent;
+}
+
+html[data-skin="aurora"] .history-tabs {
+  padding: 3px;
+  border: 1px solid var(--glass-line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+html[data-skin="aurora"] .history-tabs button {
+  border-radius: 999px;
+  font-family: var(--mono);
+}
+
+html[data-skin="aurora"] .history-tabs button[aria-pressed="true"] {
+  border-color: transparent;
+  background: var(--ink);
+}
+
+html[data-skin="aurora"] .history-search {
+  padding: 0 10px;
+  border: 1px solid var(--glass-line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+html[data-skin="aurora"] .history-search:focus-within {
+  border-color: rgba(76, 93, 245, 0.5);
+  box-shadow: 0 0 0 3px rgba(76, 93, 245, 0.12);
+}
+
+html[data-skin="aurora"] .history-search input {
+  font-family: var(--sans);
+}
+
+html[data-skin="aurora"] .history-row {
+  margin: 0 12px;
+  border-bottom-color: var(--hairline);
+  border-radius: 16px;
+}
+
+html[data-skin="aurora"] .history-row:hover {
+  background: rgba(255, 255, 255, 0.66);
+  box-shadow: var(--shadow-soft);
+}
+
+html[data-skin="aurora"] .history-date {
+  border: 0;
+  border-radius: 16px;
+  background: var(--lime);
+}
+
+html[data-skin="aurora"] .history-date strong,
+html[data-skin="aurora"] .history-copy h3,
+html[data-skin="aurora"] .history-empty strong {
+  font-family: var(--display);
+}
+
+html[data-skin="aurora"] .history-state,
+html[data-skin="aurora"] .history-copy small,
+html[data-skin="aurora"] .history-actions a,
+html[data-skin="aurora"] .history-note-missing {
+  font-family: var(--mono);
+}
+
+html[data-skin="aurora"] .history-actions a {
+  border-color: var(--hairline);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.66);
+}
+
+html[data-skin="aurora"] .history-actions .history-note-link {
+  border-color: transparent;
+  background: var(--accent);
+  color: #fff;
+}
+
+html[data-skin="aurora"] .history-actions a:hover {
+  border-color: transparent;
+  background: var(--lime);
+  color: var(--ink);
+}
+
+@media (max-width: 640px) {
+  html[data-skin="aurora"] .history-panel {
+    width: 100vw;
+    height: 100dvh;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+  }
+
+  html[data-skin="aurora"] .history-stats {
+    margin-inline: 10px;
+  }
+
+  html[data-skin="aurora"] .history-row {
+    margin-inline: 5px;
+  }
+}
+
 @media (max-width: 640px) {
   html[data-skin="aurora"] .clip-group {
     margin-inline: 8px;

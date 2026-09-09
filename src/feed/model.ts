@@ -72,6 +72,39 @@ export function feedStats(items: FeedItemView[]) {
   };
 }
 
+/**
+ * History comes from a dedicated database query because the feed itself only contains unread rows.
+ * A just-clicked unread card may not be in that server snapshot yet, so merge by id and let the
+ * optimistic client copy win.
+ */
+export function mergeDeepReadHistory(
+  history: FeedItemView[],
+  currentItems: FeedItemView[],
+): FeedItemView[] {
+  const byId = new Map(history.map((item) => [item.id, item]));
+  for (const item of currentItems) {
+    if (item.archiveRequestedAt) byId.set(item.id, item);
+  }
+  return [...byId.values()].sort((a, b) =>
+    Date.parse(b.archiveRequestedAt ?? b.firstSeenAt) - Date.parse(a.archiveRequestedAt ?? a.firstSeenAt));
+}
+
+export function deepReadStats(items: FeedItemView[]) {
+  return {
+    total: items.length,
+    linked: items.filter((item) => Boolean(item.obsidianPath)).length,
+    pending: items.filter((item) => !item.archivedAt).length,
+    legacy: items.filter((item) => item.archivedAt && !item.obsidianPath).length,
+  };
+}
+
+export function obsidianNoteUrl(vaultName: string | null, notePath: string | null): string | null {
+  const vault = vaultName?.trim();
+  const file = notePath?.trim();
+  if (!vault || !file) return null;
+  return `obsidian://open?vault=${encodeURIComponent(vault)}&file=${encodeURIComponent(file)}`;
+}
+
 export function applyLocalFeedAction(items: FeedItemView[], action: FeedItemAction): FeedItemView[] {
   return items.map((item) => {
     if (action.type === 'toggle_entity_star') {

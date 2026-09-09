@@ -10,12 +10,24 @@ import {
   splitFeed,
   unreadFeedItems,
   feedStats,
+  deepReadStats,
+  mergeDeepReadHistory,
+  obsidianNoteUrl,
 } from '../src/feed/model.js';
 
 const now = new Date('2026-08-29T08:00:00+08:00');
 const demo = createDemoFeed(now).items;
 
 describe('M5 feed model', () => {
+  it('only creates local Obsidian links when both vault and note path are configured', () => {
+    expect(obsidianNoteUrl('Research Vault', 'Research Notes/a b.md')).toBe(
+      'obsidian://open?vault=Research%20Vault&file=Research%20Notes%2Fa%20b.md',
+    );
+    expect(obsidianNoteUrl(null, 'Research Notes/a.md')).toBeNull();
+    expect(obsidianNoteUrl('Research Vault', null)).toBeNull();
+    expect(obsidianNoteUrl('   ', 'Research Notes/a.md')).toBeNull();
+  });
+
   it('filters by every §5 filter dimension without losing folded items globally', () => {
     expect(filterFeedItems(demo, { ...EMPTY_FILTERS, person: '肖弘' })).toHaveLength(1);
     expect(filterFeedItems(demo, { ...EMPTY_FILTERS, company: 'Perplexity' })).toHaveLength(1);
@@ -116,6 +128,15 @@ describe('M5 feed model', () => {
     expect(options.tags).toContain('产品与用户');
     expect(new Set(options.sources).size).toBe(options.sources.length);
   });
+
+  it('keeps deep-read history after items leave the unread inbox and lets optimistic marks lead', () => {
+    const archived = demo.find((item) => item.archivedAt)!;
+    const fresh = { ...demo[1]!, archiveRequestedAt: now.toISOString() };
+    const merged = mergeDeepReadHistory([archived], [fresh]);
+
+    expect(merged.map((item) => item.id)).toEqual([fresh.id, archived.id]);
+    expect(deepReadStats(merged)).toEqual({ total: 2, linked: 1, pending: 1, legacy: 0 });
+  });
 });
 
 describe('未读收件箱的统计口径', () => {
@@ -124,7 +145,8 @@ describe('未读收件箱的统计口径', () => {
     id, title: id, url: `https://e.com/${id}`, sourceName: 'S', country: 'US', region: '海外',
     mediaType: 'video', publishedAt: null, firstSeenAt, durationSeconds: null, contentChars: null,
     coverUrl: null, summary: null, tags: [], persons: [], companies: [], entities: [],
-    tier: 'feed', readAt: null, archiveRequestedAt: null, status: 'ok', rejectReason: null,
+    tier: 'feed', readAt: null, archiveRequestedAt: null, archivedAt: null, obsidianPath: null,
+    status: 'ok', rejectReason: null,
     isNewEntity: false, monthlyMention: null, coverTone: 0, ...extra,
   });
 

@@ -43,7 +43,7 @@ export const SEED_SOURCES: NewSource[] = [
     country: 'CN', language: 'zh', ingestMethod: 'html', fetchMode: 'full', purity: 0.3,
     enabled: false,
     // ⛔ 2026-09-05 停用，被上方「硅星人 Pro（腾讯新闻镜像）」替代。
-    //    形式与星子当初「停用 Lex Clips、改订 Lex Fridman 主频道」一致：
+    //    形式与「停用 Lex Clips、改订 Lex Fridman 主频道」一致：
     //    同一来源换一道更对的门，而不是删掉重来。
     //
     //    停用依据（实测数据，不是感觉）：

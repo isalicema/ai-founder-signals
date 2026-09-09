@@ -138,7 +138,7 @@ case "${1:-status}" in
   doctor  检查部署前置条件，逐项给出下一步（新环境先跑这个）
   status  服务与数据概况
   run     立刻跑一次 worker（不等 06:00）
-  queue   收藏队列：queue list / queue done <id>
+  queue   收藏队列：queue list / queue done <id> [note-path] / queue link <id> <note-path>
   fetch   取某条的完整正文（给下游 agent 深读用）
   install 生成并加载 launchd 服务（首次部署用）
   build   改完代码后重建网页并重启

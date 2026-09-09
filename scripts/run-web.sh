@@ -10,12 +10,12 @@ PROJECT="${0:A:h:h}"
 # ⚠️ 别改回 22：package-lock.json 由 npm 11 生成，而 node@22 自带的是 npm 10，
 #    读不懂这份 lock —— `npm ci` 会报 "Missing: esbuild@0.28.2 from lock file"。
 #    CI 在 2026-08-31 就是栽在这上面，查了很久才定位到是 npm 大版本差异。
-# 版本校验（主版本 >= 24）保留星子的写法，只是把目标版本改对。
+# 版本校验：主版本必须 >= 24。
 node_major() { "$1" -p 'process.versions.node.split(".")[0]' 2>/dev/null; }
 node_ok()    { [[ -x "$1" ]] && [[ "$(node_major "$1")" -ge 24 ]] 2>/dev/null; }
 
 NODE=""
-# ① nvm 优先：与 run-worker.sh 同源，也是 Alice 日常 shell 用的那个
+# ① nvm 优先：与 run-worker.sh 使用同一套 Node 来源
 if [[ -s "$HOME/.nvm/nvm.sh" ]]; then
   source "$HOME/.nvm/nvm.sh" >/dev/null 2>&1
   NVM_NODE=$(ls -d "$HOME"/.nvm/versions/node/*/bin/node 2>/dev/null | sort -V | tail -1)

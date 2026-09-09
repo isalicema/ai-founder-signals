@@ -93,6 +93,9 @@ export const items = pgTable(
     readAt: timestamp('read_at', { withTimezone: true }),
     archiveRequestedAt: timestamp('archive_requested_at', { withTimezone: true }),
     archivedAt: timestamp('archived_at', { withTimezone: true }),
+    // Vault-relative path written by the downstream deep-read agent.
+    // Example: Research Notes/2026-09-04-Tolan.md
+    obsidianPath: text('obsidian_path'),
     status: text('status').notNull().default('ok'),
     firstSeenAt: timestamp('first_seen_at', { withTimezone: true }).notNull().defaultNow(),
   },

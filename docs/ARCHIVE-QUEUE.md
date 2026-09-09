@@ -28,7 +28,10 @@ feed 点「◇ 深看」  →  队列  →  你（或你的 agent）深读并归
 ```bash
 afs queue list              # 列出待处理：标题、人物、公司、链接、标记时间
 afs fetch <item-id>         # 取该条的完整正文（会复用仓库已有的抓取能力）
-afs queue done <item-id>    # 归档完回写，从队列消失
+afs queue done <item-id> "Research Notes/2026-09-04-Tolan.md"
+                            # 归档完回写，并让历史面板可直达 Obsidian
+afs queue link <item-id> "Research Notes/existing-note.md"
+                            # 给既有归档补关联
 ```
 
 `afs fetch` 会按信源类型自动选路：**YouTube 取字幕、播客取 show notes、网页抓正文**，
@@ -44,7 +47,11 @@ afs queue done <item-id>    # 归档完回写，从队列消失
 2. 逐条 `afs fetch <id>` 拿正文
 3. **完整读完**再写。长内容要读到底，不能只看开头就下笔
 4. 写成结构化笔记存进用户的笔记系统
-5. `afs queue done <id>` 回写
+5. `afs queue done <id> "Research Notes/<note-file>.md"` 回写
+
+笔记路径必须是 **相对 Obsidian vault 的路径**，不能传 `/Users/...` 绝对路径。
+AFS 历史面板会用这个路径生成 `obsidian://open` 链接；只回写 `done <id>` 也允许，
+但会明确显示为“已处理 · 待关联”，避免把猜测出来的文件名当成真实关联。
 
 ### 写笔记的三条质量标准
 
@@ -88,4 +95,4 @@ afs queue done <item-id>    # 归档完回写，从队列消失
 - **导出**：`afs queue list` 的输出直接喂给别的流程
 - **不用队列**：`afs fetch` 也可以直接对任意 item id 用
 
-我们自己接的是 Obsidian 收藏夹——那是我们的用法，不是这个设计的一部分。
+也可以把它接到 Obsidian 收藏夹——那是一种可选用法，不是这个设计的前置条件。

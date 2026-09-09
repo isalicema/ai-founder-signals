@@ -148,7 +148,8 @@ DEEPSEEK_API_KEY=sk-... npx tsx tools/smokeLlm.ts
 
 ```bash
 npx tsx tools/archiveQueue.ts list        # 列出待处理
-npx tsx tools/archiveQueue.ts done <id>   # 回写 archived_at
+npx tsx tools/archiveQueue.ts done <id> "Research Notes/<note>.md"
+                                           # 回写 archived_at + Obsidian 关联
 ```
 
 前端负责人这边只需要保证 M5 的「🔖 深看」按钮写 `item.archive_requested_at`

@@ -1,7 +1,8 @@
 # AI Founder Signals
 
 AI 创始人一手访谈探测器。每天自动扫 21 个信源 → 判定是不是创始人一手访谈 →
-生成摘要卡片 → 你三十秒扫完，挑出想深看的。
+生成摘要卡片 → 你三十秒扫完，挑出想深看的。标记过的条目会进入深看历史，
+归档后还可以关联到本地笔记。
 
 **它只负责「发现」**：把值得一看的访谈摆到你面前。深读、提炼、归档是下一步，
 交给你自己的 agent 和笔记系统（见下）。
@@ -67,7 +68,7 @@ afs logs     # 跟踪 worker 日志
               ├─ 不通过 → 入库折叠，不抓正文、不花摘要钱
               └─ 通过   → 抓正文 → 摘要 → 分档 → 入库
 随时   打开 feed 扫未读，点「◇ 深看」标记想深读的
-稍后   afs queue list → 深读归档 → afs queue done
+稍后   afs queue list → 深读归档 → afs queue done <id> "Research Notes/<note>.md"
 ```
 
 ## 代码结构
@@ -88,7 +89,7 @@ deploy/           launchd 模板，`afs install` 按实际路径生成
 
 ```bash
 npm ci
-npm test          # Vitest，当前 189 项
+npm test          # Vitest，当前 196 项
 npm run typecheck # tsc --noEmit
 npm run lint
 npm run build
@@ -120,4 +121,4 @@ Drizzle schema 用于应用侧类型与查询。
 
 [MIT](LICENSE)
 
-Made with 妙蛙种子, 星子, RabbitT by Machiwhale Studio
+Made by Machiwhale Studio

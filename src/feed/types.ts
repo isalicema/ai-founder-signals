@@ -35,6 +35,8 @@ export interface FeedItemView {
   tier: FeedTier;
   readAt: string | null;
   archiveRequestedAt: string | null;
+  archivedAt: string | null;
+  obsidianPath: string | null;
   status: string;
   rejectReason: string | null;
   isNewEntity: boolean;
@@ -44,6 +46,8 @@ export interface FeedItemView {
 
 export interface FeedPayload {
   items: FeedItemView[];
+  history: FeedItemView[];
+  obsidianVaultName: string | null;
   generatedAt: string;
   mode: 'database' | 'demo';
   notice?: string;

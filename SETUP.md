@@ -43,11 +43,12 @@ brew install yt-dlp
 ## Step 2 · 建数据库
 
 1. 去 [supabase.com](https://supabase.com/dashboard) 建一个新项目（免费档）
-2. 依次执行 `supabase/migrations/` 下的三个 `.sql`（SQL Editor 里粘贴运行即可）：
+2. 依次执行 `supabase/migrations/` 下的四个 `.sql`（SQL Editor 里粘贴运行即可）：
    ```
    20260828220344_initial_schema.sql        建 5 张表
    20260828220403_enable_rls_deny_all.sql   全表 RLS 拒绝一切
    20260829074210_add_json_api_source_config.sql
+   20260909090000_add_obsidian_path.sql          深看历史关联可选笔记路径
    ```
 
 > **第二个迁移不要跳过。** Supabase 默认把 public 表通过 PostgREST 暴露给 anon key，
@@ -124,8 +125,17 @@ Feed 只负责发现。点「◇ 深看」会把条目放进队列，**但消费
 ```bash
 afs queue list          # 待处理
 afs fetch <item-id>     # 取完整正文（YouTube 字幕 / 播客 show notes / 网页正文自动选路）
-afs queue done <id>     # 归档完回写
+afs queue done <id> "Research Notes/<note-file>.md"
+                        # 归档完回写，并关联到历史面板
 ```
+
+如果希望历史面板直接打开 Obsidian，在 `.env.local` 中填写：
+
+```bash
+AFS_OBSIDIAN_VAULT_NAME="你的 Vault 名称"
+```
+
+不配置也可以正常记录深看历史和笔记相对路径，只是不生成本地跳转链接。
 
 **把 [docs/ARCHIVE-QUEUE.md](docs/ARCHIVE-QUEUE.md) 交给你的 agent** ——
 那份写明了执行步骤、笔记的质量标准，以及一条不能忽略的 provenance 规则

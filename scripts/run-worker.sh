@@ -17,7 +17,7 @@ node_major() { "$1" -p 'process.versions.node.split(".")[0]' 2>/dev/null; }
 node_ok()    { [[ -x "$1" ]] && [[ "$(node_major "$1")" -ge 24 ]] 2>/dev/null; }
 
 NODE=""
-# ① nvm 优先（Alice 日常 shell 用的就是这个，与 run-web.sh 同源）
+# ① nvm 优先（与 run-web.sh 使用同一套 Node 来源）
 if [[ -s "$HOME/.nvm/nvm.sh" ]]; then
   source "$HOME/.nvm/nvm.sh" >/dev/null 2>&1
   CAND=$(ls -d "$HOME"/.nvm/versions/node/*/bin/node 2>/dev/null | sort -V | tail -1)
