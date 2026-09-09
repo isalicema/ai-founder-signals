@@ -15,16 +15,35 @@ AI 创始人一手访谈探测器。每天自动扫 21 个信源 → 判定是�
 
 衬线大标题、硬边分隔、油墨橙。信息密度高，像早报头版。
 
-![复古皮肤](docs/screenshots/feed-editorial.png)
+![复古皮肤首页，概览区包含深看历史入口](docs/screenshots/feed-editorial.png)
 
 ### 极光 —— 玻璃拟态
 
 无衬线、荧光绿高亮、渐变封面、圆角卡片。松弛一些，适合长时间扫读。
 
-![极光皮肤](docs/screenshots/feed-aurora.png)
+![极光皮肤首页，概览区包含深看历史入口](docs/screenshots/feed-aurora.png)
 
 > 截图用的是仓库自带的演示数据（`AFS_FEED_DATA_MODE` 不设为 `database` 时就是这个），
 > 所以你 clone 下来第一眼看到的就是这个样子。
+
+## 深看历史
+
+概览区的「深看历史」会保留所有标记过 `◇ 深看` 的信号，不受未读收件箱清空影响。
+面板支持按人物、公司或主题搜索，并区分「有笔记」「待处理」两种状态。
+
+| 复古皮肤 | 极光皮肤 |
+|---|---|
+| ![复古皮肤的深看历史面板](docs/screenshots/history-editorial.png) | ![极光皮肤的深看历史面板](docs/screenshots/history-aurora.png) |
+
+下游 agent 完成分析后，可以用 vault 相对路径回写关联：
+
+```bash
+afs queue done <item-id> "Research Notes/<note>.md"
+```
+
+再在 `.env.local` 配置 `AFS_OBSIDIAN_VAULT_NAME`，历史面板就会生成本机
+`obsidian://open` 跳转。AFS 只保存笔记的相对路径，不读取或上传笔记正文；
+不使用 Obsidian 时，这个字段和配置都可以留空。
 
 ---
 
