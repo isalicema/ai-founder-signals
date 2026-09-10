@@ -1,6 +1,7 @@
 export type FeedTier = 'highlight' | 'feed' | 'folded';
 export type FeedMediaType = 'article' | 'video' | 'podcast';
 export type FeedRegion = '国内' | '海外';
+export type FeedPreference = 'like' | 'dislike' | null;
 
 export interface FeedEntityRef {
   id: string | null;
@@ -34,6 +35,7 @@ export interface FeedItemView {
   entities: FeedEntityRef[];
   tierScore: number | null;
   tier: FeedTier;
+  preference: FeedPreference;
   readAt: string | null;
   archiveRequestedAt: string | null;
   archivedAt: string | null;

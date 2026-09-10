@@ -8,7 +8,7 @@ const item = (o: Partial<FeedItemView> & { id: string }): FeedItemView => ({
   publishedAt: '2026-08-28T10:00:00Z', firstSeenAt: '2026-08-29T00:00:00Z',
   durationSeconds: null, contentChars: 1000, coverUrl: null, summary: 's',
   tags: [], persons: ['DHH'], companies: [], entities: [], tierScore: 0.5,
-  tier: 'feed', readAt: null, archiveRequestedAt: null, archivedAt: null, obsidianPath: null, status: 'ok',
+  tier: 'feed', preference: null, readAt: null, archiveRequestedAt: null, archivedAt: null, obsidianPath: null, status: 'ok',
   rejectReason: null, isNewEntity: false, monthlyMention: null, coverTone: 0,
   ...o,
 });

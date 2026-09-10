@@ -70,7 +70,12 @@ describe('M5 feed model', () => {
     const target = demo.find((item) => item.id === 'demo-perplexity-video')!;
     const disliked = applyLocalFeedAction(demo, { type: 'dislike', itemId: target.id, at });
     const liked = applyLocalFeedAction(disliked, { type: 'like', itemId: target.id, at });
-    expect(liked.find((item) => item.id === target.id)).toEqual(target);
+    expect(disliked.find((item) => item.id === target.id)).toMatchObject({
+      preference: 'dislike', tier: target.tier, tierScore: target.tierScore, readAt: target.readAt,
+    });
+    expect(liked.find((item) => item.id === target.id)).toMatchObject({
+      preference: 'like', tier: target.tier, tierScore: target.tierScore, readAt: target.readAt,
+    });
 
     const folded = demo.find((item) => item.id === 'demo-funding-folded')!;
     const restored = applyLocalFeedAction(demo, {
@@ -143,7 +148,7 @@ describe('未读收件箱的统计口径', () => {
     id, title: id, url: `https://e.com/${id}`, sourceName: 'S', country: 'US', region: '海外',
     mediaType: 'video', publishedAt: null, firstSeenAt, durationSeconds: null, contentChars: null,
     coverUrl: null, summary: null, tags: [], persons: [], companies: [], entities: [],
-    tierScore: 0.5, tier: 'feed', readAt: null, archiveRequestedAt: null, archivedAt: null, obsidianPath: null,
+    tierScore: 0.5, tier: 'feed', preference: null, readAt: null, archiveRequestedAt: null, archivedAt: null, obsidianPath: null,
     status: 'ok', rejectReason: null,
     isNewEntity: false, monthlyMention: null, coverTone: 0, ...extra,
   });

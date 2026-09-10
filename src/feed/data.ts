@@ -1,6 +1,6 @@
-import { desc, eq, gte, isNotNull, isNull } from 'drizzle-orm';
+import { desc, eq, gte, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { sharedDb } from '../db/shared';
-import { entities, items, sources } from '../db/schema';
+import { entities, feedback, items, sources } from '../db/schema';
 import { createDemoFeed } from './demo';
 import { displayTier } from '../pipeline/tier/index';
 import type {
@@ -8,6 +8,7 @@ import type {
   FeedItemView,
   FeedMediaType,
   FeedPayload,
+  FeedPreference,
   FeedTier,
   MonthlyMention,
 } from './types';
@@ -57,11 +58,25 @@ export async function loadFeed(): Promise<FeedPayload> {
 
   const connection = sharedDb();
   try {
+    const latestPreference = connection.db
+      .selectDistinctOn([feedback.itemId], {
+        itemId: feedback.itemId,
+        signal: feedback.signal,
+      })
+      .from(feedback)
+      .where(inArray(feedback.signal, ['like', 'dislike']))
+      .orderBy(feedback.itemId, desc(feedback.createdAt), desc(feedback.id))
+      .as('latest_preference');
+    const selection = {
+      ...feedItemSelection,
+      preferenceSignal: latestPreference.signal,
+    };
     const [rows, historyRows, entityRows, recentRows] = await Promise.all([
       connection.db
-        .select(feedItemSelection)
+        .select(selection)
         .from(items)
         .innerJoin(sources, eq(items.sourceId, sources.id))
+        .leftJoin(latestPreference, eq(items.id, latestPreference.itemId))
         .where(isNull(items.readAt))
         .orderBy(desc(items.firstSeenAt))
         // ⚠️ 未读收件箱没有日期边界，必须有上限兜底。
@@ -70,9 +85,10 @@ export async function loadFeed(): Promise<FeedPayload> {
         //    到顶时前端会提示，让人去「全部标为已阅」而不是默默截断。
         .limit(UNREAD_LIMIT),
       connection.db
-        .select(feedItemSelection)
+        .select(selection)
         .from(items)
         .innerJoin(sources, eq(items.sourceId, sources.id))
+        .leftJoin(latestPreference, eq(items.id, latestPreference.itemId))
         .where(isNotNull(items.archiveRequestedAt))
         .orderBy(desc(items.archiveRequestedAt))
         .limit(HISTORY_LIMIT),
@@ -136,6 +152,7 @@ export async function loadFeed(): Promise<FeedPayload> {
         entities: itemEntities,
         tierScore: row.tierScore,
         tier: displayTier({ tier: tier(row.tier), tierScore: row.tierScore }),
+        preference: explicitPreference(row.preferenceSignal),
         readAt: row.readAt?.toISOString() ?? null,
         archiveRequestedAt: row.archiveRequestedAt?.toISOString() ?? null,
         archivedAt: row.archivedAt?.toISOString() ?? null,
@@ -161,6 +178,10 @@ export async function loadFeed(): Promise<FeedPayload> {
       notice: '数据库读取失败，当前显示演示数据',
     };
   }
+}
+
+function explicitPreference(value: string | null): FeedPreference {
+  return value === 'like' || value === 'dislike' ? value : null;
 }
 
 function entityRef(

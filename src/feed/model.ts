@@ -134,9 +134,10 @@ export function applyLocalFeedAction(items: FeedItemView[], action: FeedItemActi
         // 人工纠错只恢复到 Signal Stream；是否高亮仍由固定质量线决定。
         return { ...item, tier: 'feed', readAt: null };
       case 'like':
+        return { ...item, preference: 'like' };
       case 'dislike':
         // 明确偏好只写 feedback。研究价值、内容质量和是否已阅是另外三条轴。
-        return item;
+        return { ...item, preference: 'dislike' };
     }
   });
 }

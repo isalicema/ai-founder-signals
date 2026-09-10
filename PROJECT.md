@@ -320,6 +320,8 @@ channel ID `UCJIfeSCssxSC_Dhc5s7woww`，导致一场 DHH 长访谈被拆成大�
 普通卡片上的 👍 / 👎 是明确的个人偏好，只写入 `like` / `dislike` feedback，
 不改变 tier、`tier_score`、`read_at` 或页面位置。打开原文表示核实，标记深看表示值得研究；
 两者都可能出于批判性目的，不能自动算作正偏好。
+页面加载时取每条内容最后一条 `like` / `dislike` 作为当前偏好，使按钮状态可跨刷新恢复；
+新的明确反馈覆盖界面状态，但不会删除此前的反馈事件。
 低分抽屉里的「恢复信号」用于纠正误判：将 `tier` 改为 `feed` 并清空 `read_at`，
 让内容重新进入 Signal Stream；是否显示为高亮仍只由 `tier_score >= 0.65` 决定。
 恢复动作写入独立的 `restored` feedback，不冒充 `like`。三类 action 分开，避免个人偏好、

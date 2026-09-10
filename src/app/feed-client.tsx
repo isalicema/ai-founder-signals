@@ -739,8 +739,9 @@ function SignalCard({
           <span className="action-spacer" />
           <button
             type="button"
-            className="icon-action"
+            className={`icon-action ${item.preference === 'like' ? 'is-active' : ''}`}
             aria-label="喜欢这条内容"
+            aria-pressed={item.preference === 'like'}
             title="喜欢"
             disabled={pending}
             onClick={() => onAction(
@@ -750,8 +751,9 @@ function SignalCard({
           ><span className="action-glyph" aria-hidden="true">👍</span></button>
           <button
             type="button"
-            className="icon-action"
+            className={`icon-action ${item.preference === 'dislike' ? 'is-active' : ''}`}
             aria-label="不喜欢这条内容"
+            aria-pressed={item.preference === 'dislike'}
             title="不喜欢"
             disabled={pending}
             onClick={() => onAction({ type: 'dislike', itemId: item.id, at: actionAt() }, '已记录为不喜欢，不影响质量分或已读状态')}
@@ -823,8 +825,9 @@ function ConversationClip({
           <span className="clip-action-spacer" />
           <button
             type="button"
-            className="clip-icon-action"
+            className={`clip-icon-action ${item.preference === 'like' ? 'is-active' : ''}`}
             aria-label="喜欢这条内容"
+            aria-pressed={item.preference === 'like'}
             title="喜欢"
             disabled={pending}
             onClick={() => onAction(
@@ -834,8 +837,9 @@ function ConversationClip({
           ><span className="action-glyph" aria-hidden="true">👍</span></button>
           <button
             type="button"
-            className="clip-icon-action"
+            className={`clip-icon-action ${item.preference === 'dislike' ? 'is-active' : ''}`}
             aria-label="不喜欢这条内容"
+            aria-pressed={item.preference === 'dislike'}
             title="不喜欢"
             disabled={pending}
             onClick={() => onAction({ type: 'dislike', itemId: item.id, at: actionAt() }, '已记录为不喜欢，不影响质量分或已读状态')}
