@@ -192,6 +192,16 @@ export const SEED_SOURCES: NewSource[] = [
     //     但 feed 里相邻显示即可，MVP 不做跨载体合并（架构文档 §6.1）
   },
 
+  // ───────────── 海外播客 ─────────────
+  {
+    name: 'Sources with Alex Heath',
+    url: 'https://api.substack.com/feed/podcast/3525780.rss',
+    country: 'US', language: 'en', ingestMethod: 'podcast', fetchMode: 'full', purity: 0.7,
+    // ✅ 2026-09-12 官方 RSS 实测可解析 51 条；标题、时间、时长、单集链接与 show notes 均可用。
+    //    新 Sources 节目与旧 ACCESS 节目共用历史 Feed；创始人/CEO 深访与记者讨论、
+    //    投资人及技术人士内容混合，保留 L2 身份判定，不走高纯度直通。
+  },
+
   // ───────────── 海外（YouTube，channel_id 已实测解析并验证 RSS 有效） ─────────────
   // ⚠️ 实测结论：英文 YouTube 标题几乎不写体裁词（「对谈/访谈」这类中文约定不存在），
   //    L1 规则命中率极低 → 这批信源基本全靠 L2 判定。

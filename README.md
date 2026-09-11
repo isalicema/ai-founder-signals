@@ -1,7 +1,7 @@
 # AI Founder Signals
 当前公开版本：[v1.2.1](https://github.com/isalicema/ai-founder-signals/releases/tag/v1.2.1)
 
-AI 创始人一手访谈探测器。每天自动扫 21 个信源 → 判定是不是创始人一手访谈 →
+AI 创始人一手访谈探测器。每天自动扫 22 个信源 → 判定是不是创始人一手访谈 →
 生成摘要卡片 → 你三十秒扫完，挑出想深看的。标记过的条目会进入深看历史，
 归档后还可以关联到本地笔记。
 
@@ -67,7 +67,7 @@ afs queue done <item-id> "Research Notes/<note>.md"
 ## 现状
 
 每天 06:00 自动跑（launchd），`localhost:8166` 随时可看。
-21 个信源全部可跑，全量测试全绿，成本约 **$1/月**（DeepSeek）+ Supabase 免费档。
+22 个信源全部可跑，全量测试全绿，成本约 **$1/月**（DeepSeek）+ Supabase 免费档。
 
 详细进度、决策与已知问题在 **[PROJECT.md](PROJECT.md)——那份是权威来源**。
 

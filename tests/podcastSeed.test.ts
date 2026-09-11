@@ -33,4 +33,18 @@ describe('Podcast source seed', () => {
     });
     expect(source?.enabled).not.toBe(false);
   });
+
+  it('keeps Sources with Alex Heath enabled on its official podcast RSS', () => {
+    const source = SEED_SOURCES.find((candidate) => candidate.name === 'Sources with Alex Heath');
+
+    expect(source).toMatchObject({
+      url: 'https://api.substack.com/feed/podcast/3525780.rss',
+      country: 'US',
+      language: 'en',
+      ingestMethod: 'podcast',
+      fetchMode: 'full',
+      purity: 0.7,
+    });
+    expect(source?.enabled).not.toBe(false);
+  });
 });
