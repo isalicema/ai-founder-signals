@@ -207,6 +207,13 @@ export const SEED_SOURCES: NewSource[] = [
   //    L1 规则命中率极低 → 这批信源基本全靠 L2 判定。
   //    所以 purity 必须按「AI 创始人访谈占比」如实填低，不能填体裁纯度，否则会跳过 L2。
   {
+    name: '20VC',
+    url: 'https://www.youtube.com/feeds/videos.xml?playlist_id=PLnJFlI3aINuUNaznonoFEgMUGLBiLmB-w',
+    country: 'GB', language: 'en', ingestMethod: 'youtube', fetchMode: 'full', purity: 0.4,
+    // ✅ 订阅官方 Full Episodes 播放列表，不订阅包含 Shorts 和切片的频道全量 Feed。
+    //    AI 创始人、CEO、VC、职能高管和新闻圆桌混合，保留 L2 身份判定。
+  },
+  {
     name: 'Alex Kantrowitz (Big Technology)',
     url: 'https://www.youtube.com/feeds/videos.xml?channel_id=UCye1YedIypHffYb8k6Gp9wg',
     country: 'US', language: 'en', ingestMethod: 'youtube', fetchMode: 'full', purity: 0.4,
