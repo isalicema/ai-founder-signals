@@ -13,7 +13,9 @@
  * 选这个方案而不是让网页直接调本地服务：零耦合、无常驻进程、失败可重试，
  * 且可以复用现有的下游深读流程。
  */
-try { process.loadEnvFile(new URL('../.env.local', import.meta.url).pathname); } catch { /* 可选 */ }
+import { fileURLToPath } from 'node:url';
+
+try { process.loadEnvFile(fileURLToPath(new URL('../.env.local', import.meta.url))); } catch { /* 可选 */ }
 
 import { and, eq, isNotNull, isNull, asc } from 'drizzle-orm';
 import { createDatabaseConnection } from '../src/db/client.js';

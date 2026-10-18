@@ -5,6 +5,8 @@ const LEX_MAIN_FEED = 'https://www.youtube.com/feeds/videos.xml?channel_id=UCSHZ
 const LEX_CLIPS_FEED = 'https://www.youtube.com/feeds/videos.xml?channel_id=UCJIfeSCssxSC_Dhc5s7woww';
 const TWENTY_VC_CHANNEL_FEED = 'https://www.youtube.com/feeds/videos.xml?channel_id=UCf0PBRjhf0rF8fWBIxTuoWA';
 const TWENTY_VC_FULL_EPISODES_FEED = 'https://www.youtube.com/feeds/videos.xml?playlist_id=PLnJFlI3aINuUNaznonoFEgMUGLBiLmB-w';
+const DAVID_SENRA_CHANNEL_FEED = 'https://www.youtube.com/feeds/videos.xml?channel_id=UCy2FPslt0LLPsIV0iukvHpQ';
+const DAVID_SENRA_FULL_EPISODES_FEED = 'https://www.youtube.com/feeds/videos.xml?playlist_id=PLn5mxQAXXebxbQY3BqpmbYWYty0_zJraA';
 
 describe('YouTube source seed', () => {
   it('subscribes to the Lex Fridman main channel and never enables Lex Clips', () => {
@@ -28,5 +30,20 @@ describe('YouTube source seed', () => {
     });
     expect(source?.enabled).not.toBe(false);
     expect(SEED_SOURCES.some((candidate) => candidate.url === TWENTY_VC_CHANNEL_FEED && candidate.enabled !== false)).toBe(false);
+  });
+
+  it('subscribes to David Senra full interviews without enabling its clip-heavy channel feed', () => {
+    const source = SEED_SOURCES.find((candidate) => candidate.name === 'David Senra');
+
+    expect(source).toMatchObject({
+      url: DAVID_SENRA_FULL_EPISODES_FEED,
+      country: 'US',
+      language: 'en',
+      ingestMethod: 'youtube',
+      fetchMode: 'full',
+      purity: 0.6,
+    });
+    expect(source?.enabled).not.toBe(false);
+    expect(SEED_SOURCES.some((candidate) => candidate.url === DAVID_SENRA_CHANNEL_FEED && candidate.enabled !== false)).toBe(false);
   });
 });

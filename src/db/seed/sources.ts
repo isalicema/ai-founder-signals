@@ -214,6 +214,13 @@ export const SEED_SOURCES: NewSource[] = [
     //    AI 创始人、CEO、VC、职能高管和新闻圆桌混合，保留 L2 身份判定。
   },
   {
+    name: 'David Senra',
+    url: 'https://www.youtube.com/feeds/videos.xml?playlist_id=PLn5mxQAXXebxbQY3BqpmbYWYty0_zJraA',
+    country: 'US', language: 'en', ingestMethod: 'youtube', fetchMode: 'full', purity: 0.6,
+    // ✅ 只订阅新访谈节目的官方完整节目播放列表，不订阅旧 Founders 传记解读节目，
+    //    也不订阅混有切片的频道全量 Feed。保留 L2 逐条判定受访者身份。
+  },
+  {
     name: 'Alex Kantrowitz (Big Technology)',
     url: 'https://www.youtube.com/feeds/videos.xml?channel_id=UCye1YedIypHffYb8k6Gp9wg',
     country: 'US', language: 'en', ingestMethod: 'youtube', fetchMode: 'full', purity: 0.4,

@@ -10,7 +10,9 @@
  * ⚠️ 输出里带 provenance 标注。show notes 是节目方写的说明**不是对话实录**，
  *    据此写摘要时不能写成受访者的第一人称。
  */
-process.loadEnvFile(new URL('../.env.local', import.meta.url).pathname);
+import { fileURLToPath } from 'node:url';
+
+process.loadEnvFile(fileURLToPath(new URL('../.env.local', import.meta.url)));
 
 import { eq } from 'drizzle-orm';
 import { createDatabaseConnection } from '../src/db/client.js';

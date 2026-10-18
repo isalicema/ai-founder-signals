@@ -6,8 +6,10 @@
  *
  * 预计花费：DeepSeek 约 $0.002。
  */
+import { fileURLToPath } from 'node:url';
+
 // 自动加载 .env.local（Node 20.6+ 内置，不需要 dotenv）
-try { process.loadEnvFile(new URL('../.env.local', import.meta.url).pathname); } catch { /* 没有就算了 */ }
+try { process.loadEnvFile(fileURLToPath(new URL('../.env.local', import.meta.url))); } catch { /* 没有就算了 */ }
 
 import { createLlmJudge } from '../src/llm/judge.js';
 import { summarizeItem } from '../src/llm/summarize.js';

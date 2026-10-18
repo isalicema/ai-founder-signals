@@ -4,7 +4,9 @@
  *   npx tsx tools/seed.ts          # 直连数据库写入（需要 SUPABASE_DB_URL）
  *   npx tsx tools/seed.ts --sql    # 只打印 SQL，供没有直连串时手动执行
  */
-try { process.loadEnvFile(new URL('../.env.local', import.meta.url).pathname); } catch { /* 可选 */ }
+import { fileURLToPath } from 'node:url';
+
+try { process.loadEnvFile(fileURLToPath(new URL('../.env.local', import.meta.url))); } catch { /* 可选 */ }
 
 import { SEED_SOURCES } from '../src/db/seed/sources.js';
 

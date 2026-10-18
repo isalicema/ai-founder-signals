@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import {
-  UsageLedger, digestOf, costOf, isPeakWindow, llmProvider, __setProvider,
+  UsageLedger, costOf, isPeakWindow, llmProvider, __setProvider,
 } from '../src/llm/provider.js';
 import { safeJsonParse, DeepSeekProvider } from '../src/llm/deepseek.js';
 import { createLlmJudge } from '../src/llm/judge.js';

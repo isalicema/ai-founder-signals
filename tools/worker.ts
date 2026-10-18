@@ -5,7 +5,9 @@
  *   npx tsx tools/worker.ts --no-enqueue   # 只消费现有队列，不新排任务
  *   npx tsx tools/worker.ts --max-jobs 5   # 小步试跑
  */
-try { process.loadEnvFile(new URL('../.env.local', import.meta.url).pathname); } catch { /* 可选 */ }
+import { fileURLToPath } from 'node:url';
+
+try { process.loadEnvFile(fileURLToPath(new URL('../.env.local', import.meta.url))); } catch { /* 可选 */ }
 
 import { createDatabaseConnection } from '../src/db/client.js';
 import { runWorker, enqueueDailyDiscover } from '../src/worker/run.js';

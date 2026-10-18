@@ -3,7 +3,9 @@
  *
  *   npx tsx tools/dbCheck.ts
  */
-try { process.loadEnvFile(new URL('../.env.local', import.meta.url).pathname); } catch { /* 可选 */ }
+import { fileURLToPath } from 'node:url';
+
+try { process.loadEnvFile(fileURLToPath(new URL('../.env.local', import.meta.url))); } catch { /* 可选 */ }
 
 const raw = process.env.SUPABASE_DB_URL?.trim();
 if (!raw) {
