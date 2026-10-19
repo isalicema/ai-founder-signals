@@ -7,7 +7,7 @@ export type AfsDatabase = PostgresJsDatabase<typeof schema>;
 export interface DatabaseConnection {
   db: AfsDatabase;
   sql: Sql;
-  close: () => Promise<void>;
+  close: (options?: { timeout?: number }) => Promise<void>;
 }
 
 export interface DatabaseConnectionOptions {
@@ -66,6 +66,6 @@ export function createDatabaseConnection(options: DatabaseConnectionOptions = {}
   return {
     db: drizzle(sql, { schema }),
     sql,
-    close: () => sql.end(),
+    close: (closeOptions) => sql.end(closeOptions),
   };
 }

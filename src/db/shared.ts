@@ -19,3 +19,15 @@ export function sharedDb(): DatabaseConnection {
   holder.conn ??= createDatabaseConnection({ maxConnections: 5 });
   return holder.conn;
 }
+
+/**
+ * Discard the current web-process connection pool so the next sharedDb()
+ * call creates a fresh pool. Clear the holder before closing: a close error
+ * must never leave the stale connection available for reuse.
+ */
+export async function resetSharedDb(): Promise<void> {
+  const connection = holder.conn;
+  holder.conn = undefined;
+  if (!connection) return;
+  await connection.close({ timeout: 1 });
+}

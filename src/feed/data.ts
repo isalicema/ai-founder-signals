@@ -1,5 +1,6 @@
 import { desc, eq, gte, inArray, isNotNull, isNull } from 'drizzle-orm';
-import { sharedDb } from '../db/shared';
+import { resetSharedDb, sharedDb } from '../db/shared';
+import type { DatabaseConnection } from '../db/client';
 import { entities, feedback, items, sources } from '../db/schema';
 import { createDemoFeed } from './demo';
 import { displayTier } from '../pipeline/tier/index';
@@ -19,6 +20,39 @@ const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 export const UNREAD_LIMIT = 200;
 export const HISTORY_LIMIT = 300;
 const NEW_ENTITY_WINDOW_MS = 60 * 60 * 1000;
+const DATABASE_READ_ATTEMPTS = 2;
+const DATABASE_RETRY_DELAY_MS = 300;
+
+type FeedQueryName = 'unread_items' | 'deep_read_history' | 'entities' | 'recent_mentions';
+
+class FeedQueryError extends Error {
+  readonly query: FeedQueryName;
+  readonly original: unknown;
+
+  constructor(query: FeedQueryName, original: unknown) {
+    super(errorMessage(original));
+    this.name = 'FeedQueryError';
+    this.query = query;
+    this.original = original;
+  }
+}
+
+interface FeedReadFailureLog {
+  event: 'afs.feed.database_read_failed';
+  at: string;
+  attempt: number;
+  query: FeedQueryName | 'shared_connection' | 'shared_connection_reset';
+  code: string;
+  message: string;
+  retrying: boolean;
+}
+
+interface FeedReadRetryOptions {
+  reset?: () => Promise<void>;
+  wait?: (milliseconds: number) => Promise<void>;
+  log?: (entry: FeedReadFailureLog) => void;
+  now?: () => Date;
+}
 
 const feedItemSelection = {
   id: items.id,
@@ -56,8 +90,17 @@ export async function loadFeed(): Promise<FeedPayload> {
     return { ...createDemoFeed(), notice: '缺少 SUPABASE_DB_URL，当前显示演示数据' };
   }
 
-  const connection = sharedDb();
   try {
+    return await withFeedReadRetry(() => loadDatabaseFeed(sharedDb()));
+  } catch {
+    return {
+      ...createDemoFeed(),
+      notice: '数据库连接失败，自动重试后仍未恢复；以下是演示数据，不是已全部读完；请稍后刷新。',
+    };
+  }
+}
+
+async function loadDatabaseFeed(connection: DatabaseConnection): Promise<FeedPayload> {
     const latestPreference = connection.db
       .selectDistinctOn([feedback.itemId], {
         itemId: feedback.itemId,
@@ -72,7 +115,7 @@ export async function loadFeed(): Promise<FeedPayload> {
       preferenceSignal: latestPreference.signal,
     };
     const [rows, historyRows, entityRows, recentRows] = await Promise.all([
-      connection.db
+      namedQuery('unread_items', connection.db
         .select(selection)
         .from(items)
         .innerJoin(sources, eq(items.sourceId, sources.id))
@@ -83,16 +126,16 @@ export async function loadFeed(): Promise<FeedPayload> {
         //    按每天约 50 条入库估，出差一周回来就是几百条——
         //    既拖慢渲染，也直接违背「30 秒扫完」。
         //    到顶时前端会提示，让人去「全部标为已阅」而不是默默截断。
-        .limit(UNREAD_LIMIT),
-      connection.db
+        .limit(UNREAD_LIMIT)),
+      namedQuery('deep_read_history', connection.db
         .select(selection)
         .from(items)
         .innerJoin(sources, eq(items.sourceId, sources.id))
         .leftJoin(latestPreference, eq(items.id, latestPreference.itemId))
         .where(isNotNull(items.archiveRequestedAt))
         .orderBy(desc(items.archiveRequestedAt))
-        .limit(HISTORY_LIMIT),
-      connection.db
+        .limit(HISTORY_LIMIT)),
+      namedQuery('entities', connection.db
         .select({
           id: entities.id,
           kind: entities.kind,
@@ -100,8 +143,8 @@ export async function loadFeed(): Promise<FeedPayload> {
           firstSeenAt: entities.firstSeenAt,
           starred: entities.starred,
         })
-        .from(entities),
-      connection.db
+        .from(entities)),
+      namedQuery('recent_mentions', connection.db
         .select({
           persons: items.persons,
           companies: items.companies,
@@ -110,7 +153,7 @@ export async function loadFeed(): Promise<FeedPayload> {
           firstSeenAt: items.firstSeenAt,
         })
         .from(items)
-        .where(gte(items.firstSeenAt, new Date(Date.now() - THIRTY_DAYS_MS))),
+        .where(gte(items.firstSeenAt, new Date(Date.now() - THIRTY_DAYS_MS)))),
     ]);
 
     const entityIndex = new Map(entityRows.map((entity) => [
@@ -172,12 +215,82 @@ export async function loadFeed(): Promise<FeedPayload> {
       generatedAt: new Date().toISOString(),
       mode: 'database',
     };
-  } catch {
-    return {
-      ...createDemoFeed(),
-      notice: '数据库读取失败，当前显示演示数据',
-    };
+}
+
+async function namedQuery<T>(query: FeedQueryName, operation: PromiseLike<T>): Promise<T> {
+  try {
+    return await operation;
+  } catch (error) {
+    throw new FeedQueryError(query, error);
   }
+}
+
+/**
+ * Read the feed at most twice. After the first failure, discard the shared
+ * pool so retrying cannot reuse the same stale connections.
+ */
+export async function withFeedReadRetry<T>(
+  read: () => Promise<T>,
+  options: FeedReadRetryOptions = {},
+): Promise<T> {
+  const reset = options.reset ?? resetSharedDb;
+  const wait = options.wait ?? ((milliseconds) => new Promise<void>((resolve) => setTimeout(resolve, milliseconds)));
+  const log = options.log ?? ((entry) => console.error(JSON.stringify(entry)));
+  const now = options.now ?? (() => new Date());
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= DATABASE_READ_ATTEMPTS; attempt += 1) {
+    try {
+      return await read();
+    } catch (error) {
+      lastError = error;
+      const retrying = attempt < DATABASE_READ_ATTEMPTS;
+      log(failureLog(error, attempt, retrying, now()));
+      if (!retrying) break;
+
+      try {
+        await reset();
+      } catch (resetError) {
+        log(failureLog(resetError, attempt, true, now(), 'shared_connection_reset'));
+      }
+      await wait(DATABASE_RETRY_DELAY_MS);
+    }
+  }
+
+  throw lastError;
+}
+
+function failureLog(
+  error: unknown,
+  attempt: number,
+  retrying: boolean,
+  at: Date,
+  queryOverride?: FeedReadFailureLog['query'],
+): FeedReadFailureLog {
+  const original = error instanceof FeedQueryError ? error.original : error;
+  return {
+    event: 'afs.feed.database_read_failed',
+    at: at.toISOString(),
+    attempt,
+    query: queryOverride ?? (error instanceof FeedQueryError ? error.query : 'shared_connection'),
+    code: errorCode(original),
+    message: errorMessage(original),
+    retrying,
+  };
+}
+
+function errorCode(error: unknown): string {
+  if (typeof error === 'object' && error !== null && 'code' in error) {
+    const code = (error as { code?: unknown }).code;
+    if (typeof code === 'string' || typeof code === 'number') return String(code);
+  }
+  return 'UNKNOWN';
+}
+
+function errorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  return String(error);
 }
 
 function explicitPreference(value: string | null): FeedPreference {
