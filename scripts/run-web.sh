@@ -10,16 +10,26 @@ PROJECT="${0:A:h:h}"
 # ⚠️ 别改回 22：package-lock.json 由 npm 11 生成，而 node@22 自带的是 npm 10，
 #    读不懂这份 lock —— `npm ci` 会报 "Missing: esbuild@0.28.2 from lock file"。
 #    CI 在 2026-08-31 就是栽在这上面，查了很久才定位到是 npm 大版本差异。
-# 版本校验：主版本必须 >= 24。
-node_major() { "$1" -p 'process.versions.node.split(".")[0]' 2>/dev/null; }
-node_ok()    { [[ -x "$1" ]] && [[ "$(node_major "$1")" -ge 24 ]] 2>/dev/null; }
+# 版本校验：主版本必须 >= 24。nvm 路径直接解析目录名，避免在
+# launchd 环境里为探测版本启动额外的 Node 进程。
+node_ok() {
+  [[ -x "$1" ]] || return 1
+  local ver="${${1:h:h:t}#v}"
+  local major="${ver%%.*}"
+  if [[ "$major" =~ '^[0-9]+$' ]] && [[ "$major" -ge 24 ]]; then
+    return 0
+  fi
+  ver=$("$1" --version 2>/dev/null) || return 1
+  major="${${ver#v}%%.*}"
+  [[ "$major" -ge 24 ]] 2>/dev/null
+}
 
 NODE=""
-# ① nvm 优先：与 run-worker.sh 使用同一套 Node 来源
-if [[ -s "$HOME/.nvm/nvm.sh" ]]; then
-  source "$HOME/.nvm/nvm.sh" >/dev/null 2>&1
-  NVM_NODE=$(ls -d "$HOME"/.nvm/versions/node/*/bin/node 2>/dev/null | sort -V | tail -1)
-  node_ok "$NVM_NODE" && NODE="$NVM_NODE"
+# ① nvm 优先：纯 zsh glob，不依赖 nvm.sh 或外部排序管道
+if [[ -d "$HOME/.nvm/versions/node" ]]; then
+  for candidate in "$HOME"/.nvm/versions/node/v*/bin/node(N); do
+    node_ok "$candidate" && NODE="$candidate"
+  done
 fi
 # ② PATH 里的
 if [[ -z "$NODE" ]]; then

@@ -1,15 +1,15 @@
 # AI Founder Signals
 
 > **本文件是这个项目进度与决策的权威来源。** 隔一阵子回来、或换人接手，先读这份。
-> 最后更新：2026-10-18（David Senra 信源与空格路径修复候选）
+> 最后更新：2026-10-19（数据库读取自恢复与 launchd Node 探测加固）
 
-### 当前状态（2026-10-18，Asia/Shanghai）
+### 当前状态（2026-10-19，Asia/Shanghai）
 
-- **当前公开版**：`v1.2.1`；远端 `main` 已包含本轮功能提交 `54a7c7f`。
-- **本轮目标**：新增 David Senra 完整访谈信源，修复含空格项目目录下 `.env.local` 路径解码，清理既有 lint 警告。
-- **有效决策**：只订阅 David Senra 新访谈节目的官方完整节目播放列表；`purity=0.6`，保留 L2 身份判定。
-- **最新候选**：无未提交的功能候选；David Senra 信源、空格路径修复与 lint 清理的交付证据见 §10。
-- **未完成事项**：本轮不创建新 Release，不执行真实数据库 seed/迁移或生产部署。
+- **当前公开版**：最新 Release 仍为 `v1.2.1`；GitHub `main` 已包含本轮两项可靠性修复。
+- **本轮目标**：为 Feed 数据库读取增加一次自动恢复重试，并加固 launchd 环境下的 Node 探测。
+- **有效决策**：第一次读取失败后立即丢弃共享连接池、等待 300ms，只重试一次；失败日志标明具体查询。Node 探测使用纯 zsh glob，避免加载 nvm shell 脚本或依赖外部排序管道。
+- **最新交付**：数据库恢复提交 `ea62364` 与后续 launchd/项目记录提交已获 Alice 验收并发布至 `main`；完整证据见 §10。
+- **未完成事项**：本轮没有待发布候选；未执行部署、真实数据库连接/写入、seed、迁移、Release 或版本号修改。
 
 ---
 
@@ -588,3 +588,24 @@ MVP 只实现 §4.1 的首页卡片流。**
   - 官方 Feed 冒烟：公开 YouTube adapter 实测解析 15 条，最新一条发布于 2026-10-18，媒体类型为 `video`。
   - Supabase 时效性审查：当前 changelog 无与本次静态 seed 相关的新破坏性变更。
 - **交付状态**：功能提交 `54a7c7f8317f6fe72699aee21b7708ea95bafce7` 已推送至 `main`；推送后通过 `git ls-remote` 确认远端 `main` 指向该 SHA。dry-run 权限探针未留下远端分支；私有工作区未写入、未暂存、未整理。本条记录以独立文档提交收尾。未执行真实数据库 seed、迁移、部署、Release 或版本号修改。
+
+### AFS-PUB-2026-10-19-01 · Feed 数据库读取恢复与 launchd Node 探测加固
+
+- **Alice 提出**：将私有研发区已验证的两项可靠性修复选择性移植到公开仓，拆成两个独立提交；验收通过后，Alice 明确授权将这两个提交发布至 GitHub `main`。明确不移植设备分工、预编译运行时、私人启动方式或运行记录。
+- **选择性移植范围**：
+  - 提交 1 只修改 `src/db/client.ts`、`src/db/shared.ts`、`src/feed/data.ts`，并新增 `tests/feedDataRetry.test.ts`。
+  - 提交 2 只修改 `scripts/run-web.sh`、`scripts/run-worker.sh` 与本日志。
+  - 保留公开版 `obsidianVaultName` 默认值 `null`；未修改 schema、迁移、部署模板、runtime 脚本、Release 或版本号。
+- **实际改动与依据**：
+  - `DatabaseConnection.close` 接受可选关闭超时；`resetSharedDb` 先清除全局 holder，再以 1 秒上限关闭旧池，保证关闭失败也不会继续复用失效连接。
+  - 四个并发读取用 `unread_items`、`deep_read_history`、`entities`、`recent_mentions` 稳定标识。失败时向 stderr 输出单行结构化事件 `afs.feed.database_read_failed`；第一次失败重建共享池并等待 300ms，第二次失败才回退演示数据，页面明确说明这不是“已全部读完”。
+  - launchd 启动脚本不再加载 `nvm.sh`、运行 `ls | sort | tail` 或用 `node -p` 探测版本；nvm 路径直接由纯 zsh glob 遍历并解析目录名，非 nvm 候选才使用 `--version` 兜底。
+- **验证（2026-10-19，Asia/Shanghai）**：
+  - 目标测试：2 个文件、15 项全部通过，覆盖首次失败后恢复、两次失败重抛、连接池关闭失败后仍继续重试。
+  - 全量 Vitest：34 个测试文件、208 项全部通过（单 worker 顺序执行）。
+  - TypeScript：`tsc --noEmit` 通过；ESLint：0 错误、0 警告。
+  - 脚本语法：`zsh -n scripts/run-web.sh scripts/run-worker.sh` 通过。
+  - 生产构建：Next.js 15.5.24 完整通过。首次受 Google Fonts DNS 阻断；联网重试期间外部字体 TLS 多次重连，约 6.1 分钟后正常编译并生成全部 4 个静态页面，未为网络问题修改应用代码。
+  - Supabase 时效性审查：当前 changelog 没有与本次 postgres.js 客户端连接池重置相关的新破坏性变更；未连接或写入真实数据库。
+  - 脱敏审查：未纳入私人路径、设备标识、运行时构建标识、数据库实例数据、日志内容、凭据或平台管理侧流量明细。
+- **交付状态**：提交 1 为 `ea62364`；提交 2 承载 launchd 加固和本条公开记录。两项已随这两个提交进入 GitHub `main`；未部署、未 seed、未迁移数据库、未创建 Release，也未修改版本号。

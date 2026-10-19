@@ -13,15 +13,24 @@ PROJECT="${0:A:h:h}"
 #    2026-09-05 实测：launchd 的 PATH 含 /usr/local/bin，那儿躺着一个独立的
 #    node v22.14.0，`command -v node` 第一步就命中它，于是后面的 nvm 分支
 #    根本不会执行 —— 日志里显示 node v22.14.0，而 engines 要求 >=24。
-node_major() { "$1" -p 'process.versions.node.split(".")[0]' 2>/dev/null; }
-node_ok()    { [[ -x "$1" ]] && [[ "$(node_major "$1")" -ge 24 ]] 2>/dev/null; }
+node_ok() {
+  [[ -x "$1" ]] || return 1
+  local ver="${${1:h:h:t}#v}"
+  local major="${ver%%.*}"
+  if [[ "$major" =~ '^[0-9]+$' ]] && [[ "$major" -ge 24 ]]; then
+    return 0
+  fi
+  ver=$("$1" --version 2>/dev/null) || return 1
+  major="${${ver#v}%%.*}"
+  [[ "$major" -ge 24 ]] 2>/dev/null
+}
 
 NODE=""
-# ① nvm 优先（与 run-web.sh 使用同一套 Node 来源）
-if [[ -s "$HOME/.nvm/nvm.sh" ]]; then
-  source "$HOME/.nvm/nvm.sh" >/dev/null 2>&1
-  CAND=$(ls -d "$HOME"/.nvm/versions/node/*/bin/node 2>/dev/null | sort -V | tail -1)
-  node_ok "$CAND" && NODE="$CAND"
+# ① nvm 优先：纯 zsh glob，不依赖 nvm.sh 或外部排序管道
+if [[ -d "$HOME/.nvm/versions/node" ]]; then
+  for candidate in "$HOME"/.nvm/versions/node/v*/bin/node(N); do
+    node_ok "$candidate" && NODE="$candidate"
+  done
 fi
 # ② PATH 里的（必须过版本校验）
 if [[ -z "$NODE" ]]; then
