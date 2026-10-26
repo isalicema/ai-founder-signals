@@ -256,9 +256,15 @@ export const SEED_SOURCES: NewSource[] = [
     // 体裁几乎全是访谈，但嘉宾多为 PM/增长高管而非创始人
   },
   {
-    name: 'a16z',
+    name: 'a16z Deep Dives',
     url: 'https://www.youtube.com/feeds/videos.xml?channel_id=UCQ1VQj-37kl2yS_VUhfQHsw',
     country: 'US', language: 'en', ingestMethod: 'youtube', fetchMode: 'full', purity: 0.3,
+  },
+  {
+    name: 'a16z Podcast',
+    url: 'https://www.youtube.com/feeds/videos.xml?channel_id=UC9cn0TuPq4dnbTY-CBsm8XA',
+    country: 'US', language: 'en', ingestMethod: 'youtube', fetchMode: 'full', purity: 0.3,
+    // 主频道混合长访、圆桌和短切片；保留 L2 逐条判断，不按信源直接放行。
   },
   {
     name: 'Lex Fridman',

@@ -4,6 +4,7 @@
 
 ### 新增
 
+- 将原 `a16z` 信源正名为 `a16z Deep Dives`，并新增独立的 `a16z Podcast` 官方 YouTube 主频道；主频道混合长访、圆桌和短切片，继续保留 L2 逐条判断。
 - 新增 `David Senra` 官方完整访谈 YouTube 播放列表信源；不订阅混有切片的频道全量 Feed，并保留 L2 身份判定。
 - 新增 `20VC` 官方 `Full Episodes` YouTube 播放列表信源；避开频道全量 Feed 中的 Shorts 与切片，并保留 L2 身份判定。
 - 新增 `Sources with Alex Heath` 官方 Podcast RSS；沿用通用播客适配器并保持 L2 身份判断，首次运行不回灌旧节目。
