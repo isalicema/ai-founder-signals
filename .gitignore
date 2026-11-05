@@ -12,3 +12,6 @@ dist/
 tmp/
 supabase/.temp/
 supabase/.branches/
+
+# Local project ledger; never commit or publish.
+[Pp][Rr][Oo][Jj][Ee][Cc][Tt].[Mm][Dd]
