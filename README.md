@@ -56,7 +56,7 @@ afs queue done <item-id> "Research Notes/<note>.md"
 |---|---|
 | **把它跑起来** | **[SETUP.md](SETUP.md)** — 5 步，每步带验证命令。不确定缺什么就跑 `./scripts/afs doctor`，它会逐项告诉你下一步 |
 | **处理「深看」队列**（用户说「处理收藏队列」时） | **[docs/ARCHIVE-QUEUE.md](docs/ARCHIVE-QUEUE.md)** — 执行步骤、笔记质量标准，以及一条不能忽略的 provenance 规则 |
-| **改任何东西之前** | **[PROJECT.md](PROJECT.md) §4「关键决策」** — 每条背后都有一次真实的翻车。有些看着「可以顺手优化」的地方是刻意为之 |
+| **自定义信源、判定或排序** | **[部署指南：改成你自己的](SETUP.md#改成你自己的)** — 配置入口与需要保留的设计约束 |
 
 ⚠️ **`docs/ARCHIVE-QUEUE.md` 是需要主动交给 agent 的那一份。** feed 只把条目放进队列，
 消费队列的那一半仓库不提供——归档到哪儿取决于用户用什么记笔记。
@@ -69,7 +69,7 @@ afs queue done <item-id> "Research Notes/<note>.md"
 每天 06:00 自动跑（launchd），`localhost:8166` 随时可看。
 25 个信源全部可跑，全量测试全绿，成本约 **$1/月**（DeepSeek）+ Supabase 免费档。
 
-详细进度、决策与已知问题在 **[PROJECT.md](PROJECT.md)——那份是权威来源**。
+部署与自定义说明见 [SETUP.md](SETUP.md)，公开版本变更见 [GitHub Releases](https://github.com/isalicema/ai-founder-signals/releases)。
 
 ```bash
 afs doctor   # 检查还缺什么（新环境先跑这个）

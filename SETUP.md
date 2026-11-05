@@ -5,7 +5,7 @@
 > ——它会逐项检查并给出具体的下一步命令。
 
 这是什么：一个只有你一个用户的私人 feed，每天自动抓 AI 创始人一手访谈，
-判定 → 摘要 → 分档，打开浏览器三十秒扫完。详见 [PROJECT.md](PROJECT.md)。
+判定 → 摘要 → 分档，打开浏览器三十秒扫完。功能介绍见 [README.md](README.md)。
 
 **运行环境**：macOS（用 launchd 做定时）。Linux 需要把 `deploy/` 里的 plist 换成 systemd。
 
@@ -180,9 +180,7 @@ ln -sf "$PWD/scripts/afs" ~/bin/afs     # 确保 ~/bin 在 PATH 里
 | 排序权重 / 每天高亮几场 | `src/pipeline/tier/index.ts` |
 | 抓取时间 | `deploy/*.plist.template` 里的 `StartCalendarInterval`，改完重跑 `afs install` |
 
-⚠️ **改之前先读 [PROJECT.md](PROJECT.md) 的 §4「关键决策」**。那里每一条背后都有一次
-真实的翻车，有些看起来「可以顺手优化」的地方其实是刻意为之——
-比如不做人物白名单、准入不判断「是不是 AI 公司」、反爬对抗一律不做。
+**自定义时保留以下设计约束：**不做人物白名单，准入不判断「是不是 AI 公司」，不做反爬对抗。
 
 ---
 
