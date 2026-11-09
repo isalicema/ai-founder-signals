@@ -9,8 +9,22 @@ const DAVID_SENRA_CHANNEL_FEED = 'https://www.youtube.com/feeds/videos.xml?chann
 const DAVID_SENRA_FULL_EPISODES_FEED = 'https://www.youtube.com/feeds/videos.xml?playlist_id=PLn5mxQAXXebxbQY3BqpmbYWYty0_zJraA';
 const A16Z_DEEP_DIVES_FEED = 'https://www.youtube.com/feeds/videos.xml?channel_id=UCQ1VQj-37kl2yS_VUhfQHsw';
 const A16Z_PODCAST_FEED = 'https://www.youtube.com/feeds/videos.xml?channel_id=UC9cn0TuPq4dnbTY-CBsm8XA';
+const YC_ROOT_ACCESS_FEED = 'https://www.youtube.com/feeds/videos.xml?channel_id=UCxIJaCMEptJjxmmQgGFsnCg';
+const YC_MAIN_FEED = 'https://www.youtube.com/feeds/videos.xml?channel_id=UCcefcZRL2oaA_uBNeo5UOWg';
 
 describe('YouTube source seed', () => {
+  it('keeps YC Root Access and the Y Combinator main channel distinct with admission screening', () => {
+    const root = SEED_SOURCES.find((source) => source.name === 'YC Root Access');
+    const main = SEED_SOURCES.find((source) => source.name === 'Y Combinator');
+
+    expect(root?.url).toBe(YC_ROOT_ACCESS_FEED);
+    expect(main?.url).toBe(YC_MAIN_FEED);
+    for (const source of [root, main]) {
+      expect(source).toMatchObject({ ingestMethod: 'youtube', fetchMode: 'full', purity: 0.5 });
+      expect(source?.enabled).not.toBe(false);
+    }
+  });
+
   it('subscribes to the Lex Fridman main channel and never enables Lex Clips', () => {
     const lex = SEED_SOURCES.find((source) => source.name === 'Lex Fridman');
 

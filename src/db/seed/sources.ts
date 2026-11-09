@@ -239,10 +239,16 @@ export const SEED_SOURCES: NewSource[] = [
     country: 'US', language: 'en', ingestMethod: 'youtube', fetchMode: 'full', purity: 0.4,
   },
   {
-    name: 'Y Combinator',
+    name: 'YC Root Access',
     url: 'https://www.youtube.com/feeds/videos.xml?channel_id=UCxIJaCMEptJjxmmQgGFsnCg',
     country: 'US', language: 'en', ingestMethod: 'youtube', fetchMode: 'full', purity: 0.5,
-    // 创始人故事 + 建议/申请指南混杂
+    // YC 子频道，保留原有内容与筛选先验；不代表主频道。
+  },
+  {
+    name: 'Y Combinator',
+    url: 'https://www.youtube.com/feeds/videos.xml?channel_id=UCcefcZRL2oaA_uBNeo5UOWg',
+    country: 'US', language: 'en', ingestMethod: 'youtube', fetchMode: 'full', purity: 0.5,
+    // 主频道包含创始人访谈、创业课程及短片；继续逐条准入判断。
   },
   {
     name: 'EO Global',

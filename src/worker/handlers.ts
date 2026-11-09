@@ -41,15 +41,13 @@ export async function handleDiscover(
   if (!source) throw new AdapterError('unsupported_ingest_method', { retryable: false });
 
   const adapter = ctx.registry.forSource(source);
+  const checkedAt = new Date();
   let found: DiscoveredItem[];
   try {
     found = await adapter.discover(source);
-    await ctx.db.update(sources)
-      .set({ lastCheckedAt: new Date(), consecutiveFailures: 0 })
-      .where(eq(sources.id, source.id));
   } catch (error) {
     await ctx.db.update(sources)
-      .set({ lastCheckedAt: new Date(), consecutiveFailures: source.consecutiveFailures + 1 })
+      .set({ consecutiveFailures: source.consecutiveFailures + 1 })
       .where(eq(sources.id, source.id));
     throw error;
   }
@@ -80,6 +78,10 @@ export async function handleDiscover(
       on conflict (idempotency_key) do nothing
     `;
   }
+  // Advance only after complete discovery and durable enqueue; failures retain the old window.
+  await ctx.db.update(sources)
+    .set({ lastCheckedAt: checkedAt, consecutiveFailures: 0 })
+    .where(eq(sources.id, source.id));
   return { found: found.length, enqueued: fresh.length, tooOld };
 }
 

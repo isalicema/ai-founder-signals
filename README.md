@@ -1,7 +1,7 @@
 # AI Founder Signals
 当前公开版本：[v1.2.1](https://github.com/isalicema/ai-founder-signals/releases/tag/v1.2.1)
 
-AI 创始人一手访谈探测器。每天自动扫 25 个信源 → 判定是不是创始人一手访谈 →
+AI 创始人一手访谈探测器。每天自动扫 26 个启用信源 → 判定是不是创始人一手访谈 →
 生成摘要卡片 → 你三十秒扫完，挑出想深看的。标记过的条目会进入深看历史，
 归档后还可以关联到本地笔记。
 
@@ -67,7 +67,11 @@ afs queue done <item-id> "Research Notes/<note>.md"
 ## 现状
 
 每天 06:00 自动跑（launchd），`localhost:8166` 随时可看。
-25 个信源全部可跑，全量测试全绿，成本约 **$1/月**（DeepSeek）+ Supabase 免费档。
+26 个启用信源全部可跑，全量测试全绿，成本约 **$1/月**（DeepSeek）+ Supabase 免费档。
+
+YouTube 发现默认读取官方 Atom Feed；当请求失败、超时或返回无效 Feed 时，会在相同
+频道或播放列表范围内用 `yt-dlp` 读取最近 30 条公开元数据。备用路径不会下载音视频，
+也不会猜测发布日期；发现或任务入队未完整成功时，不推进增量检查时间，下一轮仍会重试。
 
 部署与自定义说明见 [SETUP.md](SETUP.md)，公开版本变更见 [GitHub Releases](https://github.com/isalicema/ai-founder-signals/releases)。
 

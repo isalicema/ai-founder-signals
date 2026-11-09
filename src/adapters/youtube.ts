@@ -7,6 +7,7 @@ import { fetchTextResource } from './http.js';
 import { parseFeed } from './feedParser.js';
 import { AdapterError, FetchBlockedError } from './errors.js';
 import { systemCommandRunner, type CommandRunner } from './command.js';
+import { discoverYouTubeMetadata } from './youtubeDiscovery.js';
 import { vttToText } from './subtitles.js';
 
 export interface YouTubeAdapterOptions {
@@ -31,16 +32,26 @@ export class YouTubeAdapter implements SourceAdapter {
   }
 
   async discover(source: AdapterSource): Promise<DiscoveredItem[]> {
-    const response = await fetchTextResource(source.url, {
-      fetcher: this.#fetcher,
-      maxBytes: 5 * 1024 * 1024,
-      accept: 'application/atom+xml,application/xml;q=0.9,*/*;q=0.5',
-    });
-    return parseFeed(response.text, {
-      sourceUrl: response.url,
-      forcedMediaType: 'video',
-      languageHint: source.language,
-    });
+    try {
+      const response = await fetchTextResource(source.url, {
+        fetcher: this.#fetcher,
+        maxBytes: 5 * 1024 * 1024,
+        accept: 'application/atom+xml,application/xml;q=0.9,*/*;q=0.5',
+      });
+      return parseFeed(response.text, {
+        sourceUrl: response.url,
+        forcedMediaType: 'video',
+        languageHint: source.language,
+      });
+    } catch (error) {
+      if (
+        !(error instanceof AdapterError) ||
+        !['fetch_failed', 'fetch_timeout', 'invalid_feed'].includes(error.code)
+      ) {
+        throw error;
+      }
+      return discoverYouTubeMetadata(source, this.#commandRunner, this.#ytDlpPath);
+    }
   }
 
   async fetch(item: DiscoveredItem, context: { workspace: string }): Promise<EphemeralContent> {

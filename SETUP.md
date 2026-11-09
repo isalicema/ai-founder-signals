@@ -87,12 +87,12 @@ npx tsx tools/dbCheck.ts
 npx tsx tools/seed.ts
 ```
 
-写入 17 个信源（8 个 YouTube、3 个播客、3 个 JSON API、3 个 HTML）。
+写入 27 个信源（12 个 YouTube、8 个播客、4 个 JSON API、3 个 HTML，其中 1 个默认停用）。
 **这些的 `purity`（一手访谈占比）和「能否抓正文」都是实测校准过的**，不是猜的。
 
 改信源直接编辑 `src/db/seed/sources.ts` 再跑一次——脚本是幂等的，按 url 冲突则更新。
 
-**验证**：`npx tsx tools/dbCheck.ts` 显示「信源 17 个」。
+**验证**：`npx tsx tools/dbCheck.ts` 显示「信源 27 个」。
 
 ---
 

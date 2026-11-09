@@ -10,6 +10,8 @@ export type AdapterErrorCode =
   | 'invalid_api_response'
   | 'article_body_missing'
   | 'transcript_unavailable'
+  | 'youtube_discovery_failed'
+  | 'youtube_discovery_incomplete'
   | 'youtube_no_subtitles'
   | 'youtube_subtitle_fetch_failed'
   | 'yt_dlp_unavailable'
