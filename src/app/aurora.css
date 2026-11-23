@@ -757,6 +757,9 @@ html[data-skin="aurora"] .unread-label {
 html[data-skin="aurora"] .badge-highlight { background: var(--lime); color: var(--ink); }
 html[data-skin="aurora"] .badge-heat { background: var(--ink); color: #fff; }
 html[data-skin="aurora"] .badge-new { background: rgba(76, 93, 245, 0.1); color: var(--accent-deep); }
+html[data-skin="aurora"] .badge-archive { border: 0; background: rgba(22, 22, 46, 0.06); color: var(--ink-soft); }
+html[data-skin="aurora"] .badge-archive:hover { background: rgba(22, 22, 46, 0.1); color: var(--ink); }
+html[data-skin="aurora"] .badge-archive.is-full { background: rgba(139, 92, 246, 0.14); color: var(--accent-ink); }
 
 html[data-skin="aurora"] .unread-label {
   margin-left: auto;

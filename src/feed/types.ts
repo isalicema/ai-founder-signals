@@ -15,6 +15,23 @@ export interface MonthlyMention {
   count: number;
 }
 
+/** A previously archived analysis note that can be opened from a feed card. */
+export interface ArchiveNoteRef {
+  path: string;
+  label: string;
+  date: string;
+  person: string | null;
+}
+
+/** Read-only relationship between a feed card and existing archived notes. */
+export interface ArchiveLink {
+  kind: 'full' | 'related';
+  name: string;
+  count: number;
+  full: ArchiveNoteRef | null;
+  notes: ArchiveNoteRef[];
+}
+
 export interface FeedItemView {
   id: string;
   title: string;
@@ -44,6 +61,7 @@ export interface FeedItemView {
   rejectReason: string | null;
   isNewEntity: boolean;
   monthlyMention: MonthlyMention | null;
+  archiveLink?: ArchiveLink | null;
   coverTone: number;
 }
 

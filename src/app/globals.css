@@ -765,6 +765,24 @@ summary:focus-visible {
   color: var(--blue);
 }
 
+/* Read-only archive context stays quieter than quality and recency badges. */
+.badge-archive {
+  border: 1px solid var(--line-dark);
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+
+.badge-archive:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.badge-archive.is-full {
+  border-color: var(--ink);
+  background: var(--mint);
+  color: var(--ink);
+}
+
 .unread-label {
   margin-left: auto;
   padding-right: 0;

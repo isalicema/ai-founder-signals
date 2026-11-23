@@ -23,6 +23,7 @@ import {
   unreadFeedItems,
 } from '../feed/model';
 import type {
+  ArchiveLink,
   FeedFilters,
   FeedItemAction,
   FeedItemView,
@@ -290,6 +291,7 @@ export function FeedClient({ payload }: { payload: FeedPayload }) {
                     onAction={act}
                     actionAt={actionAt}
                     pending={isPending}
+                    vaultName={payload.obsidianVaultName}
                   />
                   {group.rest.length > 0 && (
                     // 同一场对话被信源切成了多段。折起来，展开才看各段。
@@ -640,6 +642,25 @@ function FilterSelect<Value extends string = string>({
   );
 }
 
+function ArchiveBadge({ link, vaultName }: { link: ArchiveLink; vaultName: string | null }) {
+  const target = link.full ?? link.notes[0]!;
+  const href = obsidianNoteUrl(vaultName, target.path);
+  const list = link.notes.map((note) => `${note.date.slice(5)} ${note.label}`).join('\n');
+  const text = link.full
+    ? `◇ 全集已收藏 · ${link.full.person ?? link.name} ${link.full.date.slice(5)}`
+    : `◇ ${link.name} 已有 ${link.count} 篇`;
+  const className = `badge badge-archive ${link.full ? 'is-full' : ''}`;
+  const title = link.full
+    ? `可能是已收藏完整内容的短片或节选\n${list}`
+    : `已归档的相关笔记\n${list}`;
+
+  return href ? (
+    <a className={className} href={href} title={title}>{text}</a>
+  ) : (
+    <span className={className} title={`${title}\n配置 Obsidian vault 后可直接打开`}>{text}</span>
+  );
+}
+
 function SignalCard({
   item,
   index,
@@ -647,6 +668,7 @@ function SignalCard({
   onAction,
   actionAt,
   pending,
+  vaultName,
 }: {
   item: FeedItemView;
   index: number;
@@ -654,6 +676,7 @@ function SignalCard({
   onAction: (action: FeedItemAction, message: string) => void;
   actionAt: () => string;
   pending: boolean;
+  vaultName: string | null;
 }) {
   const entityNames = [...item.persons, ...item.companies];
   const meta = factLine(item);
@@ -675,6 +698,7 @@ function SignalCard({
           {item.tier === 'highlight' && <span className="badge badge-highlight">◆ 高亮信号</span>}
           {item.monthlyMention && <span className="badge badge-heat">🔥 {item.monthlyMention.name} 本月第 {item.monthlyMention.count} 场</span>}
           {item.isNewEntity && <span className="badge badge-new">🆕 首次出现</span>}
+          {item.archiveLink && <ArchiveBadge link={item.archiveLink} vaultName={vaultName} />}
           {!item.readAt && <span className="unread-label">未读</span>}
         </div>
 

@@ -1,8 +1,9 @@
-import { desc, eq, gte, inArray, isNotNull, isNull } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { resetSharedDb, sharedDb } from '../db/shared';
 import type { DatabaseConnection } from '../db/client';
 import { entities, feedback, items, sources } from '../db/schema';
 import { createDemoFeed } from './demo';
+import { buildArchiveLinker, genericCompanies } from './archiveLink';
 import { displayTier } from '../pipeline/tier/index';
 import type {
   FeedEntityRef,
@@ -23,7 +24,7 @@ const NEW_ENTITY_WINDOW_MS = 60 * 60 * 1000;
 const DATABASE_READ_ATTEMPTS = 2;
 const DATABASE_RETRY_DELAY_MS = 300;
 
-type FeedQueryName = 'unread_items' | 'deep_read_history' | 'entities' | 'recent_mentions';
+type FeedQueryName = 'unread_items' | 'deep_read_history' | 'entities' | 'recent_mentions' | 'archive_index';
 
 class FeedQueryError extends Error {
   readonly query: FeedQueryName;
@@ -76,6 +77,7 @@ const feedItemSelection = {
   obsidianPath: items.obsidianPath,
   status: items.status,
   rejectReason: items.rejectReason,
+  sourceId: items.sourceId,
   sourceName: sources.name,
   country: sources.country,
 };
@@ -114,7 +116,7 @@ async function loadDatabaseFeed(connection: DatabaseConnection): Promise<FeedPay
       ...feedItemSelection,
       preferenceSignal: latestPreference.signal,
     };
-    const [rows, historyRows, entityRows, recentRows] = await Promise.all([
+    const [rows, historyRows, entityRows, recentRows, archiveRows] = await Promise.all([
       namedQuery('unread_items', connection.db
         .select(selection)
         .from(items)
@@ -154,6 +156,20 @@ async function loadDatabaseFeed(connection: DatabaseConnection): Promise<FeedPay
         })
         .from(items)
         .where(gte(items.firstSeenAt, new Date(Date.now() - THIRTY_DAYS_MS)))),
+      namedQuery('archive_index', connection.db
+        .select({
+          id: items.id,
+          title: items.title,
+          persons: items.persons,
+          companies: items.companies,
+          sourceId: items.sourceId,
+          contentChars: items.contentChars,
+          publishedAt: items.publishedAt,
+          archivedAt: items.archivedAt,
+          obsidianPath: items.obsidianPath,
+        })
+        .from(items)
+        .where(and(isNotNull(items.archivedAt), isNotNull(items.obsidianPath)))),
     ]);
 
     const entityIndex = new Map(entityRows.map((entity) => [
@@ -161,6 +177,12 @@ async function loadDatabaseFeed(connection: DatabaseConnection): Promise<FeedPay
       entity,
     ]));
     const mentionCounts = countMentions(recentRows);
+    const linkArchive = buildArchiveLinker(
+      archiveRows.flatMap((row) => (row.archivedAt && row.obsidianPath
+        ? [{ ...row, archivedAt: row.archivedAt, obsidianPath: row.obsidianPath }]
+        : [])),
+      genericCompanies(recentRows),
+    );
 
     const toFeedItem = (row: (typeof rows)[number]): FeedItemView => {
       const persons = row.persons ?? [];
@@ -204,6 +226,17 @@ async function loadDatabaseFeed(connection: DatabaseConnection): Promise<FeedPay
         rejectReason: row.rejectReason,
         isNewEntity,
         monthlyMention: strongestMention([...companies, ...persons], mentionCounts),
+        archiveLink: linkArchive({
+          id: row.id,
+          title: row.title,
+          persons,
+          companies,
+          sourceId: row.sourceId,
+          sourceName: row.sourceName,
+          contentChars: row.contentChars,
+          obsidianPath: row.obsidianPath,
+          publishedAt: row.publishedAt,
+        }),
         coverTone: toneFor(row.id),
       };
     };
